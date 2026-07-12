@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hcim-progression-v0.4.0-runelite-polish';
+const CACHE_NAME = 'hcim-progression-v0.4.2-diary-region-art';
 const APP_SHELL = [
   './',
   './index.html',
