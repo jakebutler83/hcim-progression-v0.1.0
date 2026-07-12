@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Progression Engine Test</title>
+  <style>
+    body {
+      background: #111;
+      color: #eee;
+      font-family: Arial, sans-serif;
+      padding: 30px;
+    }
+
+    .result {
+      background: #222;
+      border: 1px solid #555;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    strong {
+      color: #f0b429;
+    }
+  </style>
+</head>
+<body>
+  <h1>HCIM Progression Engine Test</h1>
+
+  <div id="output"></div>
+
+  <script type="module">
+    import {
+      getNextMilestone,
+      getAvailableMilestones,
+      getBlockedMilestones,
+      getMissingRequirements
+    } from "./src/engine/progressionEngine.js";
+
+    const output = document.getElementById("output");
+
+    function show(title, value) {
+      const box = document.createElement("div");
+      box.className = "result";
+      box.innerHTML = `
+        <strong>${title}</strong>
+        <pre>${JSON.stringify(value, null, 2)}</pre>
+      `;
+      output.appendChild(box);
+    }
+
+    const nothingCompleted = [];
+
+    show(
+      "Next milestone with nothing completed",
+      getNextMilestone(nothingCompleted)
+    );
+
+    show(
+      "Available milestones with nothing completed",
+      getAvailableMilestones(nothingCompleted)
+    );
+
+    show(
+      "Blocked milestones with nothing completed",
+      getBlockedMilestones(nothingCompleted)
+    );
+
+    const combatRequirementDone = ["130_attack_strength"];
+
+    show(
+      "Next milestone after 130 Attack + Strength",
+      getNextMilestone(combatRequirementDone)
+    );
+
+    show(
+      "Missing requirements for Dragon Defender",
+      getMissingRequirements(
+        "dragon_defender",
+        combatRequirementDone
+      )
+    );
+  </script>
+</body>
+</html>
