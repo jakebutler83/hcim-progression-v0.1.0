@@ -1,0 +1,28 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Firebase private/admin credentials
+*service-account*.json
+*serviceAccount*.json
+firebase-admin-key.json
+firebase-service-account.json
+
+# Netlify local files
+.netlify/
+
+# Node dependencies
+node_modules/
+
+# Editor/system files
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Backups and exports
+hcim-tracker-save.json
+*.bak
