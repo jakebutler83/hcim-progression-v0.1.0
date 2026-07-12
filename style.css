@@ -1091,3 +1091,148 @@ button.danger{background:linear-gradient(180deg,color-mix(in srgb,var(--hcim-dan
     grid-template-columns:1fr !important;
   }
 }
+
+
+/* =========================================================
+   v0.4.5 — DIARY REGION CARD GRID
+   Converts full-width stacked regions into collectible region cards.
+   ========================================================= */
+
+#diaryTracker{
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(300px,1fr)) !important;
+  gap:18px !important;
+  align-items:start !important;
+  width:100% !important;
+}
+
+#diaryTracker > .diary-area-panel{
+  width:100% !important;
+  min-width:0 !important;
+  margin:0 !important;
+  align-self:start !important;
+  border-radius:14px !important;
+  overflow:hidden !important;
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease,
+    filter .2s ease !important;
+}
+
+#diaryTracker > .diary-area-panel:hover{
+  transform:translateY(-3px);
+}
+
+#diaryTracker .diary-region-hero,
+#diaryTracker .diary-region-copy{
+  min-height:155px !important;
+}
+
+#diaryTracker .diary-region-copy{
+  padding:18px 18px 24px !important;
+}
+
+#diaryTracker .diary-region-copy h3{
+  font-size:clamp(1.45rem,2vw,2rem) !important;
+}
+
+#diaryTracker .diary-region-copy p{
+  font-size:.85rem !important;
+}
+
+#diaryTracker .diary-region-ring{
+  width:62px !important;
+  height:62px !important;
+}
+
+#diaryTracker .diary-region-ring strong{
+  font-size:.98rem !important;
+}
+
+/* Four diary tiers remain a compact 2×2 grid inside each region card. */
+#diaryTracker .diary-area-panel .diary-tier-list{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:10px !important;
+  padding:12px !important;
+}
+
+#diaryTracker .diary-area-panel .diary-tier-list > article.diary-card{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:none !important;
+}
+
+#diaryTracker .diary-area-panel .diary-tier-list > article.diary-card summary{
+  min-height:82px !important;
+  padding:12px !important;
+}
+
+/* Compact tier text so the cards fit cleanly. */
+#diaryTracker .diary-card summary h3,
+#diaryTracker .diary-card summary .diary-title{
+  font-size:1rem !important;
+  line-height:1.15 !important;
+}
+
+#diaryTracker .diary-card summary p,
+#diaryTracker .diary-card summary small{
+  font-size:.73rem !important;
+}
+
+/* Opening any tier turns that region into a full-width detail panel. */
+#diaryTracker > .diary-area-panel:has(details[open]){
+  grid-column:1 / -1 !important;
+}
+
+#diaryTracker > .diary-area-panel:has(details[open]) .diary-region-hero,
+#diaryTracker > .diary-area-panel:has(details[open]) .diary-region-copy{
+  min-height:190px !important;
+}
+
+#diaryTracker > .diary-area-panel:has(details[open]) .diary-tier-list{
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:14px !important;
+  padding:16px !important;
+}
+
+#diaryTracker > .diary-area-panel:has(details[open]) .diary-card:has(details[open]){
+  grid-column:1 / -1 !important;
+}
+
+/* Distinct region card accents. */
+#diaryTracker > .diary-area-panel[data-region="ardougne"]{--panel-accent-1:#e5b34f;--panel-accent-2:#76a05a;--panel-accent-3:#b46a3f}
+#diaryTracker > .diary-area-panel[data-region="desert"]{--panel-accent-1:#f09a2f;--panel-accent-2:#d65f2b;--panel-accent-3:#f4d06f}
+#diaryTracker > .diary-area-panel[data-region="falador"]{--panel-accent-1:#78b8ff;--panel-accent-2:#dcecff;--panel-accent-3:#d8aa48}
+#diaryTracker > .diary-area-panel[data-region="fremennik"]{--panel-accent-1:#71d0e6;--panel-accent-2:#9fd6ff;--panel-accent-3:#836bd0}
+#diaryTracker > .diary-area-panel[data-region="karamja"]{--panel-accent-1:#f47d34;--panel-accent-2:#54b982;--panel-accent-3:#e6c649}
+#diaryTracker > .diary-area-panel[data-region="kandarin"]{--panel-accent-1:#68b987;--panel-accent-2:#5aa8da;--panel-accent-3:#e3b64e}
+#diaryTracker > .diary-area-panel[data-region="kourend-kebos"],
+#diaryTracker > .diary-area-panel[data-region="kourend"]{--panel-accent-1:#5b99df;--panel-accent-2:#59b68e;--panel-accent-3:#ba88e1}
+#diaryTracker > .diary-area-panel[data-region="lumbridge-draynor"],
+#diaryTracker > .diary-area-panel[data-region="lumbridge"]{--panel-accent-1:#77bf5c;--panel-accent-2:#69abe2;--panel-accent-3:#e3c650}
+#diaryTracker > .diary-area-panel[data-region="morytania"]{--panel-accent-1:#a55ec7;--panel-accent-2:#5b418f;--panel-accent-3:#d65687}
+#diaryTracker > .diary-area-panel[data-region="varrock"]{--panel-accent-1:#d76146;--panel-accent-2:#d3a047;--panel-accent-3:#76509a}
+#diaryTracker > .diary-area-panel[data-region="western-provinces"]{--panel-accent-1:#29c7c4;--panel-accent-2:#538fde;--panel-accent-3:#be61dd}
+#diaryTracker > .diary-area-panel[data-region="wilderness"]{--panel-accent-1:#d44939;--panel-accent-2:#721f24;--panel-accent-3:#e9832d}
+
+@media(max-width:1300px){
+  #diaryTracker{
+    grid-template-columns:repeat(2,minmax(300px,1fr)) !important;
+  }
+}
+
+@media(max-width:760px){
+  #diaryTracker{
+    grid-template-columns:1fr !important;
+  }
+
+  #diaryTracker > .diary-area-panel:has(details[open]){
+    grid-column:auto !important;
+  }
+
+  #diaryTracker .diary-area-panel .diary-tier-list,
+  #diaryTracker > .diary-area-panel:has(details[open]) .diary-tier-list{
+    grid-template-columns:1fr !important;
+  }
+}

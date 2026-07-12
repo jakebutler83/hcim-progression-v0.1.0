@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hcim-progression-v0.4.4-diary-grid-force-fix';
+const CACHE_NAME = 'hcim-progression-v0.4.5-diary-region-card-grid';
 const APP_SHELL = [
   './',
   './index.html',
