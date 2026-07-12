@@ -7,4 +7,4 @@ window.HCIM_FIREBASE_CONFIG = {
   appId: "1:973141269474:web:92a0475574860e274477bb"
 };
 
-window.HCIM_GROUP_ID = "unionizer420-group";
+window.HCIM_ACTIVE_GROUP_ID

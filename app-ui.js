@@ -1,6 +1,16 @@
 (() => {
   const playerSlots = ['player1','player2','player3','player4','player5'];
   let refreshTimer = null;
+  let progressionEngine = null;
+  let progressionMilestones = [];
+
+  import('./src/engine/progressionEngine.js')
+    .then((engine) => {
+      progressionEngine = engine;
+      progressionMilestones = engine.getAllMilestones();
+      scheduleDashboardRefresh();
+    })
+    .catch((error) => console.warn('Progression engine could not load', error));
 
   function escapeHtml(value) {
     const div = document.createElement('div');
@@ -41,6 +51,37 @@
   function taskIsDone(task) {
     try { return typeof taskDone === 'function' ? taskDone(task) : !!state?.done?.[task.id]; }
     catch (_) { return false; }
+  }
+
+  function taskById(id) {
+    try { return (typeof allTasks === 'function' ? allTasks() : []).find((task) => task.id === id) || null; }
+    catch (_) { return null; }
+  }
+
+  function milestoneIsComplete(milestone) {
+    if (!milestone) return false;
+    const primaryTasks = (milestone.taskIds || []).map(taskById).filter(Boolean);
+    const primaryComplete = primaryTasks.length > 0 && primaryTasks.every(taskIsDone);
+    const aliasComplete = (milestone.taskAliases || []).map(taskById).filter(Boolean).some(taskIsDone);
+    return primaryComplete || aliasComplete;
+  }
+
+  function engineCompletedIds() {
+    return progressionMilestones.filter(milestoneIsComplete).map((milestone) => milestone.id);
+  }
+
+  function milestoneRemainingItems(milestone, completedIds) {
+    if (!milestone || !progressionEngine) return [];
+    const items = [];
+    progressionEngine.getMissingRequirements(milestone.id, completedIds).forEach((id) => {
+      const requirement = progressionEngine.getMilestone(id);
+      if (requirement) items.push({ title: requirement.name, desc: requirement.reason || 'Required progression milestone.' });
+    });
+    (milestone.taskIds || []).forEach((id) => {
+      const task = taskById(id);
+      if (task && !taskIsDone(task)) items.push({ title: task.title, desc: task.desc || milestone.reason || '' });
+    });
+    return items.filter((item, index, list) => list.findIndex((other) => other.title === item.title) === index);
   }
 
   function taskCountsForPlayer(slot) {
@@ -133,6 +174,28 @@
   }
 
   function currentGoal() {
+    if (progressionEngine && progressionMilestones.length) {
+      const completedIds = engineCompletedIds();
+      const milestone = progressionEngine.getNextMilestone(completedIds);
+      if (milestone) {
+        const remaining = milestoneRemainingItems(milestone, completedIds);
+        const progress = progressionEngine.getMilestoneProgress(milestone.id, completedIds);
+        return {
+          title: milestone.name,
+          done: progress.done,
+          total: progress.total,
+          pct: progress.percent,
+          remaining,
+          reason: milestone.reason,
+          estimatedMinutes: milestone.estimatedMinutes,
+          category: milestone.category,
+          route: milestone.route || 'main',
+          wiki: milestone.wiki
+        };
+      }
+      return { title: 'Current milestone map complete', done: 1, total: 1, pct: 100, remaining: [], reason: 'Every milestone in the current engine dataset is complete.' };
+    }
+
     const phases = typeof route !== 'undefined' ? route : [];
     for (const phase of phases) {
       const tasks = phase.tasks || [];
@@ -145,6 +208,22 @@
   }
 
   function nextUnlock() {
+    if (progressionEngine && progressionMilestones.length) {
+      const completedIds = engineCompletedIds();
+      const next = progressionEngine.getNextMilestone(completedIds);
+      if (next) {
+        const unlockNames = (next.unlocks || [])
+          .map((id) => progressionEngine.getMilestone(id)?.name || id.replaceAll('_', ' '))
+          .slice(0, 2);
+        return {
+          title: next.reward || next.name,
+          reason: next.reason || 'Recommended progression unlock.',
+          meta: `${next.category} · about ${next.estimatedMinutes} min${unlockNames.length ? ` · leads to ${unlockNames.join(', ')}` : ''}`,
+          route: next.route || 'main'
+        };
+      }
+    }
+
     try {
       const quests = typeof questData !== 'undefined' ? questData : [];
       const ready = quests.find(q => typeof questStatus === 'function' && questStatus(q) === 'ready');
@@ -156,15 +235,25 @@
 
   function recommendations() {
     const results = [];
+    if (progressionEngine && progressionMilestones.length) {
+      const completedIds = engineCompletedIds();
+      progressionEngine.getRecommendedMilestones(completedIds, 3).forEach((milestone) => {
+        results.push({
+          icon: iconForText(`${milestone.category} ${milestone.name}`),
+          title: milestone.name,
+          reason: `${milestone.reason || 'Recommended progression milestone.'} Estimated time: ${milestone.estimatedMinutes} minutes.`,
+          route: milestone.route || 'main'
+        });
+      });
+      if (results.length) return results;
+    }
+
     try {
       const activities = activityAnalytics().tasks || [];
       activities.filter(t => !taskIsDone(t)).slice(0, 3).forEach(t => results.push({ icon: iconForText(t.title), title: t.title, reason: t.desc || 'Optional group progression.', route: 'main' }));
       if (results.length < 3) {
         const readyQuests = (typeof questData !== 'undefined' ? questData : []).filter(q => typeof questStatus === 'function' && questStatus(q) === 'ready');
         readyQuests.slice(0, 3 - results.length).forEach(q => results.push({ icon: '📜', title: q.name, reason: q.reward || 'Quest unlock available now.', route: 'quests' }));
-      }
-      if (results.length < 3) {
-        (typeof allTasks === 'function' ? allTasks() : []).filter(t => !taskIsDone(t)).slice(0, 3 - results.length).forEach(t => results.push({ icon: iconForText(t.title), title: t.title, reason: t.desc || 'Recommended progression step.', route: 'main' }));
       }
     } catch (_) {}
     return results.slice(0, 3);
@@ -215,7 +304,7 @@
     const goalBar = document.getElementById('smartGoalBar');
     const checklist = document.getElementById('smartGoalChecklist');
     if (goalTitle) goalTitle.textContent = goal.title;
-    if (goalReason) goalReason.textContent = goal.remaining.length ? `${goal.remaining.length} tracked steps remain in this milestone.` : 'This milestone is complete.';
+    if (goalReason) goalReason.textContent = goal.remaining.length ? `${goal.reason || `${goal.remaining.length} tracked steps remain.`}${goal.estimatedMinutes ? ` Estimated time: ${goal.estimatedMinutes} minutes.` : ''}` : (goal.reason || 'This milestone is complete.');
     if (goalPct) goalPct.textContent = `${goal.pct}%`;
     if (goalBar) goalBar.style.width = `${goal.pct}%`;
     if (checklist) checklist.innerHTML = goal.remaining.map(t => `<div class="goal-item"><span>○</span><div><strong>${escapeHtml(t.title)}</strong><small>${escapeHtml(t.desc || '')}</small></div></div>`).join('') || '<div class="goal-item complete"><span>✓</span><div><strong>Milestone complete</strong><small>Your group is ready for the next chapter.</small></div></div>';
