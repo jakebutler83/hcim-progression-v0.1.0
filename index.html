@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HCIM Progression</title>
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="auth-loading">
+  <section id="authScreen" class="auth-screen" aria-label="Account access">
+    <div class="auth-shell">
+      <div class="auth-brand">
+        <img src="icons/icon-192.png" alt="HCIM Tracker icon" />
+        <div>
+          <span class="auth-kicker">PUBLIC V2 FOUNDATION</span>
+          <h1>HCIM Tracker</h1>
+          <p>Create an account to keep your group progression protected and synced.</p>
+        </div>
+      </div>
+
+      <div class="auth-card">
+        <div class="auth-tabs" role="tablist">
+          <button id="showLoginBtn" class="auth-tab active" type="button">Log in</button>
+          <button id="showSignupBtn" class="auth-tab" type="button">Create account</button>
+        </div>
+
+        <form id="loginForm" class="auth-form">
+          <h2>Welcome back</h2>
+          <label>Email<input id="loginEmail" type="email" autocomplete="email" required /></label>
+          <label>Password<input id="loginPassword" type="password" autocomplete="current-password" minlength="6" required /></label>
+          <button class="primary auth-submit" type="submit">Log in</button>
+        </form>
+
+        <form id="signupForm" class="auth-form" hidden>
+          <h2>Create your account</h2>
+          <label>Display name<input id="signupDisplayName" maxlength="30" autocomplete="nickname" required /></label>
+          <label>RuneScape name<input id="signupRsName" maxlength="12" autocomplete="off" required /></label>
+          <label>Email<input id="signupEmail" type="email" autocomplete="email" required /></label>
+          <label>Password<input id="signupPassword" type="password" autocomplete="new-password" minlength="6" required /></label>
+          <label>Confirm password<input id="signupConfirmPassword" type="password" autocomplete="new-password" minlength="6" required /></label>
+          <button class="primary auth-submit" type="submit">Create account</button>
+        </form>
+
+        <p id="authMessage" class="auth-message" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+
+  <section id="groupScreen" class="group-screen" hidden aria-label="Group setup">
+    <div class="group-shell">
+      <div class="group-welcome">
+        <span class="auth-kicker">HCIM PROGRESSION</span>
+        <h1 id="groupWelcomeTitle">Welcome!</h1>
+        <p>Create your first Group Ironman team. The app will generate a private group ID and invite code automatically.</p>
+      </div>
+      <div class="group-card">
+        <h2>Create a new group</h2>
+        <form id="createGroupForm" class="auth-form">
+          <label>Group name<input id="createGroupName" maxlength="40" placeholder="Rock Smokers" required /></label>
+          <label>Group size
+            <select id="createGroupSize" required>
+              <option value="2">2 players</option>
+              <option value="3" selected>3 players</option>
+              <option value="4">4 players</option>
+              <option value="5">5 players</option>
+            </select>
+          </label>
+          <button class="primary auth-submit" type="submit">Create Group</button>
+        </form>
+        <div class="group-divider"><span>OR</span></div>
+        <div class="join-preview">
+          <h3>Join an existing group</h3>
+          <p>Enter the invite code your group owner sent you.</p>
+          <form id="joinGroupForm" class="auth-form join-group-form">
+            <label>Invite code
+              <input id="joinInviteCode" maxlength="8" autocomplete="off" placeholder="HC7A2K" required />
+            </label>
+            <button class="primary auth-submit" type="submit">Join Group</button>
+          </form>
+        </div>
+        <p id="groupMessage" class="auth-message" aria-live="polite"></p>
+        <button id="groupLogoutBtn" type="button">Log out</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="appShell" class="app-shell" hidden>
+  <header class="topbar">
+    <div>
+      <h1>Rock Smokers HCIM Tracker</h1>
+      <p>Polished live-sync roadmap for your 3-man Hardcore Group Ironman team.</p>
+    </div>
+    <div class="header-actions">
+      <span id="authUserBadge" class="user-badge">Signed in</span>
+      <span id="syncStatus" class="sync-status">Checking sync...</span>
+      <button id="logoutBtn" type="button">Log out</button>
+      <button id="importBtn">Import Save</button>
+      <input id="importFile" type="file" accept="application/json,.json" hidden />
+      <button id="exportBtn">Export Save</button>
+      <button id="resetBtn" class="danger">Reset</button>
+    </div>
+  </header>
+
+  <aside class="app-sidebar" aria-label="Main navigation">
+    <div class="sidebar-brand">
+      <img src="icons/icon-192.png" alt="" />
+      <div><strong>HCIM</strong><span>Progression</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="side-link active" data-target="dashboard">🏠 <span>Dashboard</span></button>
+      <button class="side-link" data-target="main">🧭 <span>Progression</span></button>
+      <button class="side-link" data-target="quests">📜 <span>Quests</span></button>
+      <button class="side-link" data-target="diary">🏅 <span>Diaries</span></button>
+      <button class="side-link" data-target="team">👥 <span>Player Jobs</span></button>
+      <button class="side-link" data-target="storage">🎒 <span>Group Storage</span></button>
+      <button class="side-link" data-target="calc">🧮 <span>Skill Planner</span></button>
+      <button class="side-link" data-target="group">🛡️ <span>Group</span></button>
+      <button class="side-link" data-target="settings">⚙️ <span>Settings</span></button>
+    </nav>
+    <div class="sidebar-footer"><span id="sidebarGroupName">Your group</span><small id="sidebarMemberCount">Loading members…</small></div>
+  </aside>
+
+  <main class="app-main">
+    <section id="dashboard" class="route active-route dashboard-route">
+    <section class="dashboard-hero card">
+      <div><span class="eyebrow">GROUP HOME</span><h2 id="dashboardGreeting">Welcome back</h2><p id="dashboardGroupLine">Your next progression step is ready.</p></div>
+      <button class="primary dashboard-continue" data-open-route="main">Continue Progression</button>
+    </section>
+    <section class="dashboard-grid">
+      <article class="card next-card">
+        <h2>🎯 Next Task</h2>
+        <p id="nextStep">Loading...</p>
+        <div class="mini-actions">
+          <button id="nextBtn" class="primary">Jump to next</button>
+          <button id="completeNextBtn">Complete next</button>
+        </div>
+      </article>
+      <article class="card">
+        <h2>📊 Group Progress</h2>
+        <div class="progress-wrap"><div id="progressBar" class="progress-bar"></div></div>
+        <p id="progressText">0% complete</p>
+      </article>
+      <article class="card">
+        <h2>🏆 Current Milestone</h2>
+        <p id="milestoneText">Tutorial Island → safe starter bank</p>
+        <p class="small" id="dangerText">HC rule: food + teleport + escape plan.</p>
+      </article>
+    </section>
+
+    <section class="card setup-card">
+      <h2>🛡️ Group Setup</h2>
+      <div class="setup-grid">
+        <label>Group name <input id="groupName" placeholder="Unionizer420 HCIM" /></label>
+        <label>Player 1 <input id="player1" placeholder="Jake / Combat" /></label>
+        <label>Player 2 <input id="player2" placeholder="Friend 2 / Money" /></label>
+        <label>Player 3 <input id="player3" placeholder="Friend 3 / Supplier" /></label>
+      </div>
+      <p class="small">Names sync with Firebase when configured. Otherwise they save only in your browser.</p>
+    </section>
+    <section class="dashboard-insights-grid">
+      <article class="card dashboard-goal-card">
+        <span class="eyebrow">CURRENT GROUP GOAL</span>
+        <div class="goal-card-head"><div><h2 id="smartGoalTitle">Finding your next goal…</h2><p id="smartGoalReason">Your progression data is being reviewed.</p></div><span id="smartGoalPercent" class="goal-percent">0%</span></div>
+        <div class="progress-wrap large"><div id="smartGoalBar" class="progress-bar"></div></div>
+        <div id="smartGoalChecklist" class="goal-checklist"></div>
+        <button class="primary" data-open-route="main" type="button">Open progression</button>
+      </article>
+      <article class="card dashboard-unlock-card">
+        <span class="eyebrow">BIGGEST UNLOCK COMING</span>
+        <h2 id="nextUnlockTitle">Loading…</h2>
+        <p id="nextUnlockReason">Finding the closest useful unlock.</p>
+        <div id="nextUnlockMeta" class="unlock-meta"></div>
+        <button data-open-route="quests" type="button">View quests</button>
+      </article>
+    </section>
+
+    <section class="category-progress-section">
+      <div class="section-heading"><div><span class="eyebrow">GROUP ANALYTICS</span><h2>Progress breakdown</h2></div><p id="weakestAreaText" class="small"></p></div>
+      <div class="category-progress-grid">
+        <article class="category-card card"><div class="category-title"><span>🧭 Progression</span><strong id="categoryRoutePct">0%</strong></div><div class="progress-wrap"><div id="categoryRouteBar" class="progress-bar"></div></div><small id="categoryRouteMeta"></small></article>
+        <article class="category-card card"><div class="category-title"><span>📜 Questing</span><strong id="categoryQuestPct">0%</strong></div><div class="progress-wrap"><div id="categoryQuestBar" class="progress-bar"></div></div><small id="categoryQuestMeta"></small></article>
+        <article class="category-card card"><div class="category-title"><span>🏅 Diaries</span><strong id="categoryDiaryPct">0%</strong></div><div class="progress-wrap"><div id="categoryDiaryBar" class="progress-bar"></div></div><small id="categoryDiaryMeta"></small></article>
+        <article class="category-card card"><div class="category-title"><span>🎮 Activities</span><strong id="categoryActivityPct">0%</strong></div><div class="progress-wrap"><div id="categoryActivityBar" class="progress-bar"></div></div><small id="categoryActivityMeta"></small></article>
+        <article class="category-card card"><div class="category-title"><span>🎒 Group Bank</span><strong id="categoryStoragePct">0%</strong></div><div class="progress-wrap"><div id="categoryStorageBar" class="progress-bar"></div></div><small id="categoryStorageMeta"></small></article>
+      </div>
+    </section>
+
+    <section class="recommended-section">
+      <div class="section-heading"><div><span class="eyebrow">RECOMMENDED TONIGHT</span><h2>Good next activities</h2></div></div>
+      <div id="recommendedActivityGrid" class="recommended-activity-grid"></div>
+    </section>
+
+    <section class="section-heading player-heading"><div><span class="eyebrow">MEMBER PROGRESSION</span><h2>Your group</h2></div></section>
+    <section class="player-overview-grid" id="playerOverviewGrid"></section>
+    </section>
+
+    <nav class="tabs legacy-tabs">
+      <button class="tab active" data-route="dashboard">🏠 Dashboard</button>
+      <button class="tab" data-route="main">⚔️ Main Route</button>
+      <button class="tab" data-route="team">👥 Player Jobs</button>
+      <button class="tab" data-route="storage">🎒 Group Storage</button>
+      <button class="tab" data-route="quests">📜 Quest Tracker</button>
+      <button class="tab" data-route="diary">🏅 Diary Progress</button>
+      <button class="tab" data-route="calc">🧮 Skill Math</button>
+      <button class="tab" data-route="sync">🟢 Live Sync</button>
+      <button class="tab" data-route="group">👥 Group</button>
+      <button class="tab" data-route="settings">⚙️ Settings</button>
+    </nav>
+
+    <section id="main" class="route">
+      <div class="route-head">
+        <div><h2>⚔️ Main Progression Route</h2><p>Do these in order. Every checkbox is meant to be dummy-friendly.</p></div>
+        <select id="phaseFilter"><option value="all">All phases</option></select>
+      </div>
+      <div id="mainTasks" class="task-list"></div>
+    </section>
+
+    <section id="team" class="route">
+      <h2>👥 Player Jobs</h2>
+      <p>These split the grind so all 3 of you are not wasting time doing the same thing.</p>
+      <div id="teamTasks" class="task-list"></div>
+    </section>
+
+    <section id="storage" class="route">
+      <h2>🎒 Group Storage Goals</h2>
+      <p>Track what the team bank should have before risky milestones.</p>
+      <div id="storageTasks" class="task-list"></div>
+    </section>
+
+
+    <section id="quests" class="route">
+      <div class="route-head">
+        <div><h2>Quest Auto Tracker</h2><p>Full OSRS quest list with 3-player tracking, status colors, Wiki buttons, and Dink auto-sync mapping.</p></div>
+        <div class="quest-tools">
+          <input id="questSearch" placeholder="Search all OSRS quests..." />
+          <select id="questFilter" title="Progress filter">
+            <option value="all">All progress states</option>
+            <option value="ready">Ready now</option>
+            <option value="blocked">Blocked</option>
+            <option value="complete">Complete</option>
+          </select>
+          <select id="questTypeFilter" title="Quest type filter">
+            <option value="all">Members + F2P + Miniquests</option>
+            <option value="members">Members quests</option>
+            <option value="f2p">Free-to-play quests</option>
+            <option value="miniquest">Miniquests</option>
+          </select>
+        </div>
+      </div>
+      <div id="questTracker" class="quest-grid"></div>
+    </section>
+
+    <section id="diary" class="route">
+      <div class="route-head">
+        <div><h2>🏅 Achievement Diary Progression</h2><p>Tracks diary tiers for each player separately. Each tier fills 1/3, 2/3, then full when all three are done.</p></div>
+        <select id="diaryFilter">
+          <option value="all">All diaries</option>
+          <option value="ready">Ready / next</option>
+          <option value="complete">Complete</option>
+        </select>
+      </div>
+      <div id="diaryTracker" class="diary-grid"></div>
+    </section>
+
+    <section id="calc" class="route">
+      <h2>🧮 Skill Math Calculator</h2>
+      <p>Use this to calculate exact actions: “bury X bones to reach Prayer Y,” “steal X cakes,” etc.</p>
+      <div class="calculator-card">
+        <div class="calc-grid">
+          <label>Skill<select id="calcSkill"></select></label>
+          <label>Current level<input id="calcCurrent" type="number" min="1" max="98" value="1" /></label>
+          <label>Current XP optional<input id="calcCurrentXp" type="number" min="0" placeholder="blank = level start" /></label>
+          <label>Target level<input id="calcTarget" type="number" min="2" max="99" value="43" /></label>
+          <label>Method<select id="calcMethod"></select></label>
+        </div>
+        <div id="calcResult" class="calc-result">Loading...</div>
+      </div>
+    </section>
+
+    <section id="sync" class="route">
+      <h2>🟢 Live Sync Setup</h2>
+      <div class="sync-card">
+        <p id="syncDetails">Checking Firebase setup...</p>
+        <div class="discord-test-row"><button id="discordTestBtn" type="button">Send Discord test</button><span id="discordTestStatus" class="small"></span></div>
+        <ol>
+          <li>Create a Firebase project.</li>
+          <li>Create a Firestore Database in test mode.</li>
+          <li>Open <code>firebase-config.js</code> in VS Code.</li>
+          <li>Paste your Firebase config into that file.</li>
+          <li>Upload the whole folder to Netlify.</li>
+          <li>Share the Netlify link with your friends.</li>
+        </ol>
+        <p class="danger-note"><strong>Important:</strong> Test mode is okay for a tiny private friend tracker, but anyone with the link could change data. Use a random Netlify URL or add login later.</p>
+      </div>
+    </section>
+
+    <section id="group" class="route">
+      <div class="route-head"><div><h2>👥 Group Management</h2><p>View your members and share the invite code.</p></div></div>
+      <div class="group-management-grid">
+        <article class="card invite-card"><span class="eyebrow">INVITE CODE</span><h3 id="groupInviteCode">Loading…</h3><button id="copyInviteBtn" class="primary" type="button">Copy Invite Code</button><p class="small">Send this code to teammates after they create an account.</p></article>
+        <article class="card"><span class="eyebrow">GROUP DETAILS</span><h3 id="groupPageName">Loading…</h3><p id="groupOwnerText">Owner: loading…</p><p id="groupCapacityText">Members: loading…</p></article>
+      </div>
+      <div id="groupMemberCards" class="member-card-grid"></div>
+    </section>
+
+    <section id="settings" class="route">
+      <div class="route-head"><div><h2>⚙️ Settings</h2><p>Account, display, save, and integration tools.</p></div></div>
+      <div class="settings-grid">
+        <article class="card"><h3>Account</h3><p id="settingsAccountName">Signed in</p><p id="settingsAccountEmail" class="small"></p><button id="settingsLogoutBtn" type="button">Log out</button></article>
+        <article class="card"><h3>Save Management</h3><p>Keep a backup before major updates.</p><div class="mini-actions"><button id="settingsImportBtn" type="button">Import Save</button><button id="settingsExportBtn" type="button">Export Save</button></div></article>
+        <article class="card"><h3>Integrations</h3><p>Firebase group sync is connected automatically. Configure Discord and Dink from the Live Sync page.</p><button class="open-route-btn" data-open-route="sync" type="button">Open Live Sync</button></article>
+      </div>
+    </section>
+  </main>
+
+  <footer>RuneLite-inspired HCIM Tracker • Hardcore safety: food + teleport + escape plan.</footer>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="auth.js"></script>
+  <script src="script.js"></script>
+  <script src="app-ui.js"></script>
+</body>
+</html>
