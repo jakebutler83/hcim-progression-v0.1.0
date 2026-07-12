@@ -1236,3 +1236,42 @@ button.danger{background:linear-gradient(180deg,color-mix(in srgb,var(--hcim-dan
     grid-template-columns:1fr !important;
   }
 }
+
+
+/* =========================================================
+   v0.4.6 — ILLUSTRATED DIARY BANNERS
+   Replaces geometric CSS placeholders with custom SVG artwork.
+   ========================================================= */
+
+#diaryTracker .diary-region-art{
+  background-size:cover !important;
+  background-position:center !important;
+  background-repeat:no-repeat !important;
+  transform:scale(1.01);
+}
+
+#diaryTracker .diary-region-art > *{
+  display:none !important;
+}
+
+#diaryTracker .diary-area-panel[data-region="ardougne"] .diary-region-art{background-image:url("./assets/diaries/ardougne.svg") !important}
+#diaryTracker .diary-area-panel[data-region="desert"] .diary-region-art{background-image:url("./assets/diaries/desert.svg") !important}
+#diaryTracker .diary-area-panel[data-region="falador"] .diary-region-art{background-image:url("./assets/diaries/falador.svg") !important}
+#diaryTracker .diary-area-panel[data-region="fremennik"] .diary-region-art{background-image:url("./assets/diaries/fremennik.svg") !important}
+#diaryTracker .diary-area-panel[data-region="kandarin"] .diary-region-art{background-image:url("./assets/diaries/kandarin.svg") !important}
+#diaryTracker .diary-area-panel[data-region="karamja"] .diary-region-art{background-image:url("./assets/diaries/karamja.svg") !important}
+#diaryTracker .diary-area-panel[data-region="lumbridge-draynor"] .diary-region-art,
+#diaryTracker .diary-area-panel[data-region="lumbridge"] .diary-region-art{background-image:url("./assets/diaries/lumbridge-draynor.svg") !important}
+#diaryTracker .diary-area-panel[data-region="morytania"] .diary-region-art{background-image:url("./assets/diaries/morytania.svg") !important}
+#diaryTracker .diary-area-panel[data-region="varrock"] .diary-region-art{background-image:url("./assets/diaries/varrock.svg") !important}
+#diaryTracker .diary-area-panel[data-region="western-provinces"] .diary-region-art{background-image:url("./assets/diaries/western-provinces.svg") !important}
+#diaryTracker .diary-area-panel[data-region="wilderness"] .diary-region-art{background-image:url("./assets/diaries/wilderness.svg") !important}
+#diaryTracker .diary-area-panel[data-region="kourend-kebos"] .diary-region-art,
+#diaryTracker .diary-area-panel[data-region="kourend"] .diary-region-art{background-image:url("./assets/diaries/kourend-kebos.svg") !important}
+
+/* Softer overlay now that the banners contain real scene detail. */
+#diaryTracker .diary-region-overlay{
+  background:
+    linear-gradient(90deg,rgba(5,5,5,.78) 0%,rgba(5,5,5,.42) 48%,rgba(5,5,5,.12) 75%,rgba(5,5,5,.38) 100%),
+    linear-gradient(0deg,rgba(8,6,4,.74),transparent 60%) !important;
+}

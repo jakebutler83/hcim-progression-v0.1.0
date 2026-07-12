@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hcim-progression-v0.4.5-diary-region-card-grid';
+const CACHE_NAME = 'hcim-progression-v0.4.6-diary-artwork-upgrade';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,7 +10,19 @@ const APP_SHELL = [
   './firebase-config.js',
   './manifest.json',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './assets/diaries/ardougne.svg',
+  './assets/diaries/desert.svg',
+  './assets/diaries/falador.svg',
+  './assets/diaries/fremennik.svg',
+  './assets/diaries/kandarin.svg',
+  './assets/diaries/karamja.svg',
+  './assets/diaries/lumbridge-draynor.svg',
+  './assets/diaries/morytania.svg',
+  './assets/diaries/varrock.svg',
+  './assets/diaries/western-provinces.svg',
+  './assets/diaries/wilderness.svg',
+  './assets/diaries/kourend-kebos.svg',
 ];
 
 self.addEventListener('install', event => {
