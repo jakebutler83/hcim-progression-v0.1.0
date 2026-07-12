@@ -45,3 +45,38 @@
     });
   });
 })();
+
+// v0.4.0 appearance system and reusable toast helper
+(() => {
+  const THEME_KEY = 'hcimAppearanceTheme';
+  const validThemes = new Set(['classic','ember','runite','elite']);
+
+  function applyTheme(theme, announce = false) {
+    const selected = validThemes.has(theme) ? theme : 'classic';
+    if (selected === 'classic') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', selected);
+    localStorage.setItem(THEME_KEY, selected);
+    document.querySelectorAll('[data-theme-choice]').forEach(button => {
+      button.setAttribute('aria-pressed', String(button.dataset.themeChoice === selected));
+    });
+    if (announce && window.hcimToast) window.hcimToast('Appearance updated', `${selected[0].toUpperCase()+selected.slice(1)} theme is now active.`, 'success');
+  }
+
+  window.hcimToast = function(title, message = '', type = 'info') {
+    const stack = document.getElementById('toastStack');
+    if (!stack) return;
+    const toast = document.createElement('div');
+    toast.className = `hcim-toast ${type}`;
+    toast.innerHTML = `<span>${type === 'success' ? '✓' : '✦'}</span><div><strong>${title}</strong>${message ? `<div>${message}</div>` : ''}</div>`;
+    stack.appendChild(toast);
+    setTimeout(() => toast.remove(), 3600);
+  };
+
+  applyTheme(localStorage.getItem(THEME_KEY) || 'classic');
+  document.addEventListener('DOMContentLoaded', () => {
+    applyTheme(localStorage.getItem(THEME_KEY) || 'classic');
+    document.querySelectorAll('[data-theme-choice]').forEach(button => {
+      button.addEventListener('click', () => applyTheme(button.dataset.themeChoice, true));
+    });
+  });
+})();

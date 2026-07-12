@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HCIM Progression</title>
+  <title>HCIM Progression v0.4.0</title>
   <meta name="theme-color" content="#0d1117" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -353,6 +353,7 @@
         <article class="card"><h3>Account</h3><p id="settingsAccountName">Signed in</p><p id="settingsAccountEmail" class="small"></p><button id="settingsLogoutBtn" type="button">Log out</button></article>
         <article class="card"><h3>Save Management</h3><p>Keep a backup before major updates.</p><div class="mini-actions"><button id="settingsImportBtn" type="button">Import Save</button><button id="settingsExportBtn" type="button">Export Save</button></div></article>
         <article class="card"><h3>Integrations</h3><p>Cloud group sync is automatic. Discord and RuneLite Dink are optional connections.</p><button class="open-route-btn" data-open-route="sync" type="button">Open Connections</button></article>
+        <article class="card theme-settings-card"><span class="eyebrow">APPEARANCE</span><h3>Interface Theme</h3><p>Choose the color format that best matches your RuneScape setup.</p><div class="theme-picker" role="group" aria-label="Interface theme"><button class="theme-option" type="button" data-theme-choice="classic"><span class="theme-swatch"><i style="background:#d7a43a"></i><i style="background:#7a5324"></i><i style="background:#241b12"></i></span><strong>Classic Gold</strong><small>Traditional OSRS bronze</small></button><button class="theme-option" type="button" data-theme-choice="ember"><span class="theme-swatch"><i style="background:#dc7d35"></i><i style="background:#7e351f"></i><i style="background:#26130f"></i></span><strong>Hardcore Ember</strong><small>Warm red and orange</small></button><button class="theme-option" type="button" data-theme-choice="runite"><span class="theme-swatch"><i style="background:#7db8db"></i><i style="background:#355a78"></i><i style="background:#14202a"></i></span><strong>Runite Blue</strong><small>Cool RuneLite-inspired</small></button><button class="theme-option" type="button" data-theme-choice="elite"><span class="theme-swatch"><i style="background:#a67be0"></i><i style="background:#573b79"></i><i style="background:#1d1727"></i></span><strong>Elite Purple</strong><small>Late-game diary style</small></button></div></article>
       <article class="card"><h3>Closed Beta Feedback</h3><p>Found a bug or have an idea? Send a report with a screenshot and your device/browser.</p><a class="button-link" href="https://github.com/jakebutler83/hcim-progression/issues/new" target="_blank" rel="noopener">Report Feedback</a></article>
       </div>
     </section>
@@ -367,9 +368,11 @@
     </div>
   </div>
 
+  <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+
   <div id="appErrorBanner" class="app-error-banner" hidden><strong>Something went wrong.</strong><span id="appErrorText">Refresh the page or report this beta issue.</span><button id="dismissErrorBtn" type="button">Dismiss</button></div>
 
-  <footer>HCIM Progression Closed Beta • Unofficial fan-made tool • Food + teleport + escape plan.</footer>
+  <footer>HCIM Progression v0.4.0 Closed Beta • Unofficial fan-made tool • Food + teleport + escape plan.</footer>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>

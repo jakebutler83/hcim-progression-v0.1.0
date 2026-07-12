@@ -395,3 +395,107 @@ footer{border-top:2px ridge #7a5a32;background:#120d08;color:#c7ad7a}
 .empty-state{display:flex;flex-direction:column;gap:5px;padding:28px;text-align:center;border:2px groove #6f502b;background:rgba(0,0,0,.2);border-radius:8px;color:#d8c08d}
 @media(max-width:1050px){.diary-tools{grid-template-columns:1fr 1fr}.diary-tools input{grid-column:1/-1}.diary-summary-grid{grid-template-columns:repeat(2,1fr)}.diary-tier-list{grid-template-columns:1fr}}
 @media(max-width:640px){.diary-tools,.diary-summary-grid{grid-template-columns:1fr}.diary-tools input{grid-column:auto}.diary-step-row{grid-template-columns:1fr}.mini-player-toggles{justify-content:flex-start}}
+
+/* =========================================================
+   HCIM PROGRESSION v0.4.0 — RUNELITE POLISH DESIGN SYSTEM
+   ========================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap');
+
+:root{
+  --hcim-gold:#d7a43a;
+  --hcim-gold-bright:#ffd66b;
+  --hcim-bronze:#7a5324;
+  --hcim-bronze-dark:#3d2815;
+  --hcim-stone:#120f0b;
+  --hcim-stone-2:#1b1610;
+  --hcim-panel:#241b12;
+  --hcim-panel-raised:#302316;
+  --hcim-line:#6e4f28;
+  --hcim-line-soft:rgba(215,164,58,.24);
+  --hcim-text:#f5e7c1;
+  --hcim-muted:#c7ad7a;
+  --hcim-info:#4a90d9;
+  --hcim-success:#66b85a;
+  --hcim-warning:#e29a38;
+  --hcim-danger:#b84c3f;
+  --hcim-elite:#8b5fc7;
+  --hcim-shadow:0 20px 50px rgba(0,0,0,.42);
+  --hcim-radius:10px;
+  --hcim-space-1:6px;
+  --hcim-space-2:10px;
+  --hcim-space-3:16px;
+  --hcim-space-4:24px;
+  --hcim-space-5:32px;
+  --hcim-fast:150ms;
+  --hcim-medium:260ms;
+}
+
+html[data-theme="ember"]{
+  --hcim-gold:#dc7d35;--hcim-gold-bright:#ffb565;--hcim-bronze:#7e351f;
+  --hcim-panel:#26130f;--hcim-panel-raised:#351812;--hcim-line:#7f3e27;
+  --hcim-info:#5f88d8;--hcim-success:#73b75f;--hcim-elite:#9b62c7;
+}
+html[data-theme="runite"]{
+  --hcim-gold:#7db8db;--hcim-gold-bright:#b9e3ff;--hcim-bronze:#355a78;
+  --hcim-panel:#14202a;--hcim-panel-raised:#1c2c38;--hcim-line:#476c86;
+  --hcim-info:#70b9ef;--hcim-success:#64bd8b;--hcim-warning:#dda85a;--hcim-elite:#8876d6;
+}
+html[data-theme="elite"]{
+  --hcim-gold:#a67be0;--hcim-gold-bright:#d8b9ff;--hcim-bronze:#573b79;
+  --hcim-panel:#1d1727;--hcim-panel-raised:#281e36;--hcim-line:#674a87;
+  --hcim-info:#6aa8dd;--hcim-success:#65b786;--hcim-warning:#d49d4a;--hcim-elite:#b487ef;
+}
+
+body{font-family:'Inter',system-ui,sans-serif;color:var(--hcim-text);background:
+  radial-gradient(circle at 14% 0%,color-mix(in srgb,var(--hcim-gold) 18%,transparent),transparent 30%),
+  radial-gradient(circle at 86% 5%,color-mix(in srgb,var(--hcim-info) 12%,transparent),transparent 26%),
+  linear-gradient(145deg,#080604 0%,var(--hcim-stone) 42%,#050403 100%);}
+body:after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.18;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.14) 1px,transparent 0);background-size:18px 18px;}
+h1,h2,h3,.eyebrow,.sidebar-brand strong{font-family:'Cinzel',Georgia,serif;letter-spacing:.03em}
+.goal-percent,.category-title strong,.diary-summary-card strong,.progress-label,.phase-count{font-family:'Roboto Condensed','Inter',sans-serif}
+
+.topbar{background:linear-gradient(180deg,color-mix(in srgb,var(--hcim-panel-raised) 96%,black),color-mix(in srgb,var(--hcim-panel) 92%,black));border-bottom:1px solid var(--hcim-line);box-shadow:0 10px 36px rgba(0,0,0,.42)}
+.topbar h1,.route-head h2,.dashboard-hero h2{color:var(--hcim-gold-bright)}
+
+.card,.phase,.sync-card,.calculator-card,.quest-card,.diary-region-card,.diary-tier-card{border-radius:var(--hcim-radius);background:linear-gradient(180deg,color-mix(in srgb,var(--hcim-panel-raised) 92%,black),color-mix(in srgb,var(--hcim-panel) 96%,black));border:1px solid var(--hcim-line-soft);box-shadow:var(--hcim-shadow),inset 0 1px rgba(255,255,255,.04);transition:transform var(--hcim-fast) ease,border-color var(--hcim-fast) ease,box-shadow var(--hcim-fast) ease}
+.card:hover,.quest-card:hover,.diary-region-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--hcim-gold) 58%,transparent);box-shadow:0 24px 58px rgba(0,0,0,.48),0 0 0 1px color-mix(in srgb,var(--hcim-gold) 14%,transparent)}
+.card:before,.sync-card:before,.calculator-card:before{background:linear-gradient(90deg,transparent,var(--hcim-gold),var(--hcim-info),transparent)}
+
+button,.button-link{border-radius:7px;font-family:'Inter',sans-serif;transition:transform var(--hcim-fast),filter var(--hcim-fast),box-shadow var(--hcim-fast);}
+button.primary,.button-link.primary{background:linear-gradient(180deg,var(--hcim-gold-bright),var(--hcim-gold));color:#1e1306;border:1px solid color-mix(in srgb,var(--hcim-gold-bright) 70%,white);text-shadow:none}
+button:hover,.button-link:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.wiki-link,.button-link{background:linear-gradient(180deg,color-mix(in srgb,var(--hcim-info) 85%,white),var(--hcim-info));color:white;border-color:color-mix(in srgb,var(--hcim-info) 70%,white)}
+button.danger{background:linear-gradient(180deg,color-mix(in srgb,var(--hcim-danger) 90%,white),var(--hcim-danger));color:#fff}
+
+.app-sidebar{border-right:1px solid var(--hcim-line);background:linear-gradient(180deg,color-mix(in srgb,var(--hcim-stone-2) 96%,black),#090705);box-shadow:12px 0 35px rgba(0,0,0,.42)}
+.side-link{border-left:3px solid transparent;border-radius:0 7px 7px 0;background:transparent;box-shadow:none}
+.side-link:hover{background:color-mix(in srgb,var(--hcim-gold) 10%,transparent);border-left-color:color-mix(in srgb,var(--hcim-gold) 48%,transparent)}
+.side-link.active{background:linear-gradient(90deg,color-mix(in srgb,var(--hcim-gold) 22%,transparent),transparent);border-left-color:var(--hcim-gold-bright);color:var(--hcim-gold-bright)}
+.sidebar-brand img{filter:drop-shadow(0 0 10px color-mix(in srgb,var(--hcim-gold) 55%,transparent))}
+
+.progress-wrap{background:#090704;border:1px solid color-mix(in srgb,var(--hcim-line) 65%,black);box-shadow:inset 0 2px 7px rgba(0,0,0,.55)}
+.progress-bar{background:linear-gradient(90deg,var(--hcim-bronze),var(--hcim-gold),var(--hcim-success));box-shadow:0 0 18px color-mix(in srgb,var(--hcim-gold) 28%,transparent);transition:width .7s cubic-bezier(.2,.8,.2,1)}
+
+.beta-pill,.connection-status,.quest-status,.tier-badge{letter-spacing:.08em;text-transform:uppercase}
+.connection-status.live,.status-complete,.task.done{--status-accent:var(--hcim-success)}
+.diary-tier-card[data-tier="Elite"],.tier-elite{--status-accent:var(--hcim-elite)}
+.diary-tier-card[data-tier="Hard"],.tier-hard{--status-accent:var(--hcim-danger)}
+.diary-tier-card[data-tier="Medium"],.tier-medium{--status-accent:var(--hcim-info)}
+.diary-tier-card[data-tier="Easy"],.tier-easy{--status-accent:var(--hcim-success)}
+.diary-tier-card{border-left:4px solid var(--status-accent,var(--hcim-gold))}
+
+.toast-stack{position:fixed;right:20px;bottom:20px;z-index:120;display:grid;gap:10px;max-width:min(360px,calc(100vw - 32px))}
+.hcim-toast{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;padding:14px 16px;border-radius:9px;background:linear-gradient(180deg,var(--hcim-panel-raised),var(--hcim-panel));border:1px solid var(--hcim-line);box-shadow:0 18px 40px rgba(0,0,0,.48);animation:hcimToastIn .25s ease both}
+.hcim-toast.success{border-left:4px solid var(--hcim-success)}
+.hcim-toast.info{border-left:4px solid var(--hcim-info)}
+.hcim-toast strong{color:var(--hcim-gold-bright)}
+@keyframes hcimToastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+.theme-picker{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:10px;margin-top:12px}
+.theme-option{position:relative;padding:14px 12px;text-align:left;min-height:72px}
+.theme-option strong{display:block;margin-bottom:5px}.theme-option small{color:var(--hcim-muted)}
+.theme-option[aria-pressed="true"]{outline:2px solid var(--hcim-gold-bright);box-shadow:0 0 22px color-mix(in srgb,var(--hcim-gold) 24%,transparent)}
+.theme-swatch{display:flex;gap:4px;margin-bottom:8px}.theme-swatch i{width:18px;height:8px;border-radius:99px;display:block}
+
+@media(max-width:760px){.theme-picker{grid-template-columns:1fr 1fr}.topbar{padding:14px}.card{padding:15px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
