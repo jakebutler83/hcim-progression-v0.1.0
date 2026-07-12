@@ -1,10 +1,11 @@
-const CACHE_NAME = 'hcim-progression-v2-dashboard-v1';
+const CACHE_NAME = 'hcim-progression-v0.3.5-diary-count-fix';
 const APP_SHELL = [
   './',
   './index.html',
   './style.css',
   './script.js',
   './app-ui.js',
+  './beta-ui.js',
   './auth.js',
   './firebase-config.js',
   './manifest.json',

@@ -3,6 +3,7 @@
   let refreshTimer = null;
   let progressionEngine = null;
   let progressionMilestones = [];
+  let stopActivityFeed = null;
 
   import('./src/engine/progressionEngine.js')
     .then((engine) => {
@@ -19,10 +20,28 @@
   }
 
   function openRoute(target) {
+    const route = document.getElementById(target);
     const legacy = document.querySelector(`.tab[data-route="${target}"]`);
     if (legacy) legacy.click();
     document.querySelectorAll('.side-link').forEach(btn => btn.classList.toggle('active', btn.dataset.target === target));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Re-render data-backed routes after they become visible. This prevents an empty
+    // diary/quest view when a cached shell loaded before the current data script.
+    if (target === 'diary' && typeof window.renderDiaryTracker === 'function') window.renderDiaryTracker();
+    if (target === 'quests' && typeof window.renderQuestTracker === 'function') window.renderQuestTracker();
+    if (typeof window.renderAll === 'function') window.renderAll();
+
+    // Wait until the selected route is visible, then place its heading directly below the header.
+    requestAnimationFrame(() => {
+      const destination = route?.querySelector('.route-head, .dashboard-hero, h2') || route;
+      destination?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    // Mouse clicks leave the navigation button focused, which kept :focus-within open.
+    // Blur after navigation so the rail collapses normally when the pointer leaves.
+    if (document.activeElement && document.activeElement.classList?.contains('side-link')) {
+      document.activeElement.blur();
+    }
   }
 
   function activeGroupSize() {
@@ -271,6 +290,68 @@
     return '⭐';
   }
 
+  function relativeTime(value) {
+    const date = value && typeof value.toDate === 'function' ? value.toDate() : new Date(value || Date.now());
+    const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+    if (seconds < 45) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+    return date.toLocaleDateString();
+  }
+
+  function activityIcon(type, title) {
+    const text = `${type || ''} ${title || ''}`.toLowerCase();
+    if (/quest/.test(text)) return '📜';
+    if (/diary/.test(text)) return '🏅';
+    if (/level|skill/.test(text)) return '📈';
+    if (/group-complete|milestone|unlock/.test(text)) return '🏆';
+    if (/dink|runelite|sync/.test(text)) return '🔗';
+    return '✅';
+  }
+
+  function renderActivityFeed(items = []) {
+    const feed = document.getElementById('activityFeed');
+    if (!feed) return;
+    if (!items.length) {
+      feed.innerHTML = '<div class="activity-empty">Activity from task completions and Dink will appear here.</div>';
+      return;
+    }
+    feed.innerHTML = items.map(item => `<article class="activity-item"><span class="activity-icon">${activityIcon(item.type, item.title)}</span><div class="activity-copy"><strong>${escapeHtml(item.title || 'Progress updated')}</strong><span>${escapeHtml(item.player || item.details || item.phase || '')}</span></div><time class="activity-time">${relativeTime(item.createdAt || item.at)}</time></article>`).join('');
+  }
+
+  function subscribeActivity(groupId) {
+    if (stopActivityFeed) { stopActivityFeed(); stopActivityFeed = null; }
+    try {
+      const db = firebase.firestore();
+      stopActivityFeed = db.collection('groups').doc(groupId).collection('activity').orderBy('createdAt', 'desc').limit(12).onSnapshot((snap) => {
+        renderActivityFeed(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }, (error) => {
+        console.warn('Could not load activity feed', error);
+        renderActivityFeed([]);
+      });
+    } catch (error) {
+      console.warn('Could not subscribe to activity feed', error);
+    }
+  }
+
+  function renderProgressionMiniMap() {
+    const map = document.getElementById('progressionMiniMap');
+    if (!map || !progressionEngine || !progressionMilestones.length) return;
+    const completedIds = engineCompletedIds();
+    const current = progressionEngine.getNextMilestone(completedIds);
+    const currentIndex = current ? progressionMilestones.findIndex(m => m.id === current.id) : progressionMilestones.length - 1;
+    const start = Math.max(0, currentIndex - 2);
+    const nodes = progressionMilestones.slice(start, start + 6);
+    map.innerHTML = nodes.map((milestone, index) => {
+      const complete = completedIds.includes(milestone.id);
+      const isCurrent = current && current.id === milestone.id;
+      const cls = complete ? 'complete' : isCurrent ? 'current' : 'locked';
+      const status = complete ? 'COMPLETE' : isCurrent ? 'CURRENT GOAL' : 'LOCKED';
+      return `<div class="map-node-wrap"><article class="map-node ${cls}"><span class="map-node-status">${status}</span><h3>${escapeHtml(milestone.name)}</h3><small>${escapeHtml(milestone.reward || milestone.stage || '')}</small></article>${index < nodes.length - 1 ? '<span class="map-arrow">→</span>' : ''}</div>`;
+    }).join('');
+  }
+
   function renderDashboardInsights() {
     if (typeof state === 'undefined') return;
     const routeA = routeAnalytics();
@@ -313,9 +394,19 @@
     const unlockTitle = document.getElementById('nextUnlockTitle');
     const unlockReason = document.getElementById('nextUnlockReason');
     const unlockMeta = document.getElementById('nextUnlockMeta');
+    const unlockButton = document.getElementById('nextUnlockButton');
     if (unlockTitle) unlockTitle.textContent = unlock.title;
     if (unlockReason) unlockReason.textContent = unlock.reason;
     if (unlockMeta) unlockMeta.innerHTML = `<span>${escapeHtml(unlock.meta)}</span><span>Recommended next</span>`;
+    if (unlockButton) {
+      const routeLabels = {
+        main: 'Open progression', quests: 'View quests', diary: 'View diaries',
+        team: 'View player jobs', storage: 'View group storage', calc: 'Open skill planner',
+        group: 'Open group', settings: 'Open settings', overview: 'Open overview'
+      };
+      unlockButton.dataset.openRoute = unlock.route || 'main';
+      unlockButton.textContent = routeLabels[unlock.route] || 'Open related section';
+    }
 
     const recGrid = document.getElementById('recommendedActivityGrid');
     if (recGrid) {
@@ -325,6 +416,7 @@
     }
 
     renderPlayerOverview();
+    renderProgressionMiniMap();
   }
 
   function scheduleDashboardRefresh() {
@@ -343,6 +435,14 @@
     document.getElementById('sidebarMemberCount').textContent = `${group.memberCount || 1}/${group.groupSize || 3} members`;
     document.getElementById('settingsAccountName').textContent = profile.displayName || user.displayName || 'Player';
     document.getElementById('settingsAccountEmail').textContent = user.email || '';
+    const dinkEl = document.getElementById('dinkSyncUrl');
+    if (dinkEl) {
+      const slot = profile.slot || (profile.role === 'owner' ? 'player1' : 'player1');
+      const token = profile.dinkToken || '';
+      dinkEl.textContent = token
+        ? `${window.location.origin}/.netlify/functions/dink-sync?group=${encodeURIComponent(groupId)}&player=${encodeURIComponent(slot)}&token=${encodeURIComponent(token)}`
+        : 'Dink token unavailable — log out and back in once.';
+    }
 
     try {
       const db = firebase.firestore();
@@ -361,6 +461,7 @@
     } catch (error) {
       console.warn('Could not load group members', error);
     }
+    subscribeActivity(groupId);
     scheduleDashboardRefresh();
   }
 
@@ -371,6 +472,12 @@
       const code = document.getElementById('groupInviteCode').textContent.trim();
       try { await navigator.clipboard.writeText(code); document.getElementById('copyInviteBtn').textContent = 'Copied!'; setTimeout(()=>document.getElementById('copyInviteBtn').textContent='Copy Invite Code',1500); }
       catch (_) { prompt('Copy this invite code:', code); }
+    });
+    document.getElementById('copyDinkBtn')?.addEventListener('click', async () => {
+      const url = document.getElementById('dinkSyncUrl')?.textContent.trim() || '';
+      if (!url.startsWith('http')) return;
+      try { await navigator.clipboard.writeText(url); document.getElementById('copyDinkBtn').textContent = 'Copied!'; setTimeout(()=>document.getElementById('copyDinkBtn').textContent='Copy Dink URL',1500); }
+      catch (_) { prompt('Copy your private Dink URL:', url); }
     });
     document.getElementById('settingsLogoutBtn')?.addEventListener('click', () => document.getElementById('logoutBtn')?.click());
     document.getElementById('settingsImportBtn')?.addEventListener('click', () => document.getElementById('importBtn')?.click());
