@@ -29,6 +29,7 @@
       'auth/weak-password': 'Use a password with at least 6 characters.',
       'auth/too-many-requests': 'Too many attempts. Wait a moment and try again.',
       'auth/network-request-failed': 'Network error. Check your connection and try again.',
+      'auth/missing-email': 'Enter your email address first.',
       'permission-denied': 'Firebase blocked this action. Check your Firestore rules.'
     };
     return messages[code] || (error && error.message) || 'Something went wrong.';
@@ -61,6 +62,27 @@
   }
 
 
+  function makeDinkToken() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID().replace(/-/g, '') + window.crypto.randomUUID().replace(/-/g, '');
+    }
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let out = '';
+    for (let i = 0; i < 64; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    return out;
+  }
+
+  async function ensureDinkToken(user, profile) {
+    if (profile && profile.dinkToken) return profile;
+    const dinkToken = makeDinkToken();
+    await db.collection('users').doc(user.uid).set({
+      dinkToken,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    return { ...(profile || {}), dinkToken };
+  }
+
+
   function normalizeInviteCode(value) {
     return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
   }
@@ -90,6 +112,7 @@
       runescapeName: rsName,
       groupId: null,
       role: null,
+      dinkToken: makeDinkToken(),
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
@@ -106,6 +129,7 @@
       runescapeName: '',
       groupId: null,
       role: null,
+      dinkToken: makeDinkToken(),
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -114,6 +138,7 @@
   }
 
   async function openGroup(groupId, profile, user) {
+    profile = await ensureDinkToken(user, profile);
     const groupSnap = await db.collection('groups').doc(groupId).get();
     if (!groupSnap.exists) {
       await db.collection('users').doc(user.uid).update({ groupId: null, role: null });
@@ -151,6 +176,20 @@
     }
   }
 
+  function updateVerificationBanner(user) {
+    const banner = document.getElementById('verificationBanner');
+    if (!banner) return;
+    banner.hidden = !user || user.emailVerified;
+  }
+
+  async function sendVerification(user, messageTarget = 'auth') {
+    if (!user || user.emailVerified) return;
+    await user.sendEmailVerification();
+    const message = 'Verification email sent. Check your inbox and spam folder.';
+    if (messageTarget === 'group') groupMessage(message, 'success');
+    else authMessage(message, 'success');
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     if (!configured) {
       authMessage('Firebase is not configured. Add your Firebase config first.', 'error');
@@ -165,6 +204,32 @@
 
     document.getElementById('showLoginBtn')?.addEventListener('click', () => showForm('login'));
     document.getElementById('showSignupBtn')?.addEventListener('click', () => showForm('signup'));
+    document.getElementById('forgotPasswordBtn')?.addEventListener('click', async () => {
+      const email = document.getElementById('loginEmail')?.value.trim();
+      if (!email) return authMessage('Enter your email address, then click Forgot password again.', 'error');
+      authMessage('Sending password reset email…');
+      try {
+        await auth.sendPasswordResetEmail(email);
+        authMessage('Password reset email sent. Check your inbox and spam folder.', 'success');
+      } catch (error) {
+        authMessage(friendlyError(error), 'error');
+      }
+    });
+
+    document.getElementById('resendVerificationBtn')?.addEventListener('click', async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      const button = document.getElementById('resendVerificationBtn');
+      if (button) button.disabled = true;
+      try {
+        await sendVerification(user);
+        if (button) button.textContent = 'Verification sent';
+      } catch (error) {
+        authMessage(friendlyError(error), 'error');
+      } finally {
+        setTimeout(() => { if (button) { button.disabled = false; button.textContent = 'Resend verification'; } }, 4000);
+      }
+    });
 
     document.getElementById('loginForm')?.addEventListener('submit', async event => {
       event.preventDefault();
@@ -191,6 +256,7 @@
       try {
         const credential = await auth.createUserWithEmailAndPassword(email, password);
         await createProfile(credential.user, displayName, rsName);
+        try { await sendVerification(credential.user); } catch (verificationError) { console.warn('Verification email failed:', verificationError); }
       } catch (error) {
         authMessage(friendlyError(error), 'error');
       }
@@ -240,6 +306,7 @@
         batch.update(db.collection('users').doc(user.uid), {
           groupId: groupRef.id,
           role: 'owner',
+          slot: 'player1',
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         batch.set(groupRef.collection('progress').doc('main'), {
@@ -253,7 +320,7 @@
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         await batch.commit();
-        const updatedProfile = { ...profile, groupId: groupRef.id, role: 'owner' };
+        const updatedProfile = { ...profile, groupId: groupRef.id, role: 'owner', slot: 'player1' };
         await openGroup(groupRef.id, updatedProfile, user);
       } catch (error) {
         console.error(error);
@@ -283,6 +350,7 @@
         const inviteRef = db.collection('groupInvites').doc(code);
         let joinedGroupId = null;
         let joinedGroup = null;
+        let joinedSlot = null;
         await db.runTransaction(async transaction => {
           const inviteSnap = await transaction.get(inviteRef);
           if (!inviteSnap.exists || inviteSnap.data().active === false) throw new Error('That invite code is invalid or expired.');
@@ -298,6 +366,7 @@
           if (memberCount >= groupSize) throw new Error('That group is already full.');
           const slotNumber = memberCount + 1;
           const slot = `player${slotNumber}`;
+          joinedSlot = slot;
           const memberRef = groupRef.collection('members').doc(user.uid);
           const userRef = db.collection('users').doc(user.uid);
           const progressRef = groupRef.collection('progress').doc('main');
@@ -329,7 +398,7 @@
           joinedGroupId = groupRef.id;
           joinedGroup = { ...group, memberUids: [...members, user.uid], memberCount: memberCount + 1 };
         });
-        const updatedProfile = { ...profile, groupId: joinedGroupId, role: 'member' };
+        const updatedProfile = { ...profile, groupId: joinedGroupId, role: 'member', slot: joinedSlot };
         window.HCIM_ACTIVE_GROUP = joinedGroup;
         await openGroup(joinedGroupId, updatedProfile, user);
       } catch (error) {
@@ -345,7 +414,10 @@
 
     auth.onAuthStateChanged(async user => {
       document.body.classList.remove('auth-loading');
+      updateVerificationBanner(user);
       if (user) {
+        await user.reload().catch(() => {});
+        updateVerificationBanner(user);
         await routeSignedInUser(user);
       } else {
         window.HCIM_CURRENT_USER = null;

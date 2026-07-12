@@ -1,6 +1,4 @@
-const DEFAULT_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'hcim-tracker-ce785';
-const DEFAULT_API_KEY = process.env.FIREBASE_API_KEY || 'AIzaSyCSMaEaY6VQJ4L5T_xH5lhNezgAZ2psYEY';
-const DEFAULT_GROUP_ID = process.env.HCIM_GROUP_ID || 'unionizer420-group';
+const { getAdmin } = require('./firebase-admin');
 
 const questMap = {
   "below ice mountain": "q001",
@@ -267,48 +265,34 @@ function findLevelMilestones(text) {
 
 function playerKey(event) {
   const p = String(event.queryStringParameters?.player || event.queryStringParameters?.p || '').toLowerCase();
-  if (['player1', 'p1', '1', 'jake'].includes(p)) return 'player1';
-  if (['player2', 'p2', '2'].includes(p)) return 'player2';
-  if (['player3', 'p3', '3'].includes(p)) return 'player3';
-  return 'player1';
+  const match = p.match(/(?:player|p)?([1-5])/);
+  return match ? `player${match[1]}` : '';
 }
 
 function playerLabel(key) {
-  if (key === 'player2') return 'Player 2';
-  if (key === 'player3') return 'Player 3';
-  return 'Jake / Player 1';
+  const n = Number(String(key).replace('player', '')) || 1;
+  return `Player ${n}`;
 }
 
-function firestoreValue(v) {
-  if (typeof v === 'boolean') return { booleanValue: v };
-  if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
-  if (typeof v === 'string') return { stringValue: v };
-  if (v && typeof v === 'object' && !Array.isArray(v)) {
-    const fields = {};
-    for (const [k, val] of Object.entries(v)) fields[k] = firestoreValue(val);
-    return { mapValue: { fields } };
-  }
-  return { stringValue: String(v ?? '') };
+async function verifyDinkAccess(admin, groupId, player, token) {
+  if (!groupId || !player || !token) throw new Error('Missing group, player, or token.');
+  const db = admin.firestore();
+  const groupRef = db.collection('groups').doc(groupId);
+  const groupSnap = await groupRef.get();
+  if (!groupSnap.exists) throw new Error('Group not found.');
+  const memberQuery = await groupRef.collection('members').where('slot', '==', player).limit(1).get();
+  if (memberQuery.empty) throw new Error('Player slot is not assigned in this group.');
+  const member = memberQuery.docs[0].data();
+  const userSnap = await db.collection('users').doc(member.uid).get();
+  if (!userSnap.exists || userSnap.data().dinkToken !== token) throw new Error('Invalid Dink token.');
+  return { db, groupRef, group: groupSnap.data(), member };
 }
 
-async function patchFirestore(fields) {
-  const updateMask = Object.keys(fields).map((p) => `updateMask.fieldPaths=${encodeURIComponent(p)}`).join('&');
-  const url = `https://firestore.googleapis.com/v1/projects/${DEFAULT_PROJECT_ID}/databases/(default)/documents/hcimTrackers/${DEFAULT_GROUP_ID}?key=${DEFAULT_API_KEY}&${updateMask}`;
-  const bodyFields = {};
-  for (const [path, value] of Object.entries(fields)) {
-    const parts = path.split('.');
-    let cursor = bodyFields;
-    for (let i = 0; i < parts.length - 1; i++) {
-      const part = parts[i];
-      cursor[part] = cursor[part] || { mapValue: { fields: {} } };
-      cursor = cursor[part].mapValue.fields;
-    }
-    cursor[parts[parts.length - 1]] = firestoreValue(value);
-  }
-  const res = await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: bodyFields }) });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`Firestore ${res.status}: ${text}`);
-  return text;
+async function patchFirestore(db, groupId, fields) {
+  const ref = db.collection('groups').doc(groupId).collection('progress').doc('main');
+  const snap = await ref.get();
+  if (!snap.exists) await ref.set({ done: {}, playerDone: {}, diaryDone: {}, diarySteps: {} }, { merge: true });
+  await ref.update(fields);
 }
 
 async function postDiscord(message) {
@@ -325,9 +309,14 @@ async function postDiscord(message) {
 exports.handler = async function(event) {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
   try {
+    const groupId = String(event.queryStringParameters?.group || '');
+    const player = playerKey(event);
+    const token = String(event.queryStringParameters?.token || '');
+    const admin = getAdmin();
+    const access = await verifyDinkAccess(admin, groupId, player, token);
+
     const payload = JSON.parse(event.body || '{}');
     const text = allText(payload);
-    const player = playerKey(event);
     const updates = {};
     const notes = [];
 
@@ -360,14 +349,24 @@ exports.handler = async function(event) {
       preview: text.slice(0, 500)
     };
 
-    await patchFirestore(updates);
+    await patchFirestore(access.db, groupId, updates);
+    await access.db.collection('groups').doc(groupId).collection('activity').add({
+      type: quest ? 'quest' : diary ? 'diary' : levels.length ? 'level' : 'dink',
+      title: notes.join(' • '),
+      player: access.member.runescapeName || playerLabel(player),
+      details: text.slice(0, 180),
+      source: 'dink',
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
     await postDiscord({
-      title: `🔗 ${playerLabel(player)} auto-synced from RuneLite`,
+      title: `🔗 ${access.member.runescapeName || playerLabel(player)} auto-synced from RuneLite`,
       description: notes.map((n) => `• ${n}`).join('\n')
     });
 
     return { statusCode: 200, body: JSON.stringify({ ok: true, matched: true, player, notes }) };
   } catch (err) {
-    return { statusCode: 400, body: err.message || 'Bad Request' };
+    console.error(err);
+    const statusCode = /Invalid Dink token|not assigned|Group not found|Missing group/.test(err.message || '') ? 403 : 400;
+    return { statusCode, body: err.message || 'Bad Request' };
   }
 };

@@ -6,5 +6,3 @@ window.HCIM_FIREBASE_CONFIG = {
   messagingSenderId: "973141269474",
   appId: "1:973141269474:web:92a0475574860e274477bb"
 };
-
-window.HCIM_ACTIVE_GROUP_ID
