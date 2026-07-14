@@ -22,6 +22,6 @@ or all three:
 - `FIREBASE_CLIENT_EMAIL`
 - `FIREBASE_PRIVATE_KEY`
 
-Also keep `DISCORD_WEBHOOK_URL` in Netlify environment variables. Never commit any of these values to GitHub.
+Discord webhooks are now entered per browser on the Connections page. `DISCORD_WEBHOOK_URL` remains an optional server-side fallback; never commit webhook values to GitHub.
 
 Each signed-in user receives a private Dink URL on the Group page. Quest, Diary, and Level overrides in Dink should use that URL.

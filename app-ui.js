@@ -424,12 +424,72 @@
     refreshTimer = setTimeout(renderDashboardInsights, 80);
   }
 
+  function formatInviteTime(ms) {
+    if (!ms) return 'No expiry';
+    return new Date(ms).toLocaleString();
+  }
+
+  async function inviteRequest(action, extra = {}) {
+    if (!window.HCIM_AUTHENTICATED_FUNCTION) throw new Error('Invite service is not ready. Refresh and try again.');
+    return window.HCIM_AUTHENTICATED_FUNCTION('group-invite-manage', {
+      action,
+      groupId: window.HCIM_ACTIVE_GROUP_ID,
+      ...extra
+    });
+  }
+
+  async function loadInvites() {
+    const role = window.HCIM_CURRENT_PROFILE?.role;
+    const ownerControls = document.getElementById('inviteOwnerControls');
+    const codeEl = document.getElementById('groupInviteCode');
+    const summary = document.getElementById('inviteSummaryText');
+    const copyButton = document.getElementById('copyInviteBtn');
+    if (role !== 'owner') {
+      if (ownerControls) ownerControls.hidden = true;
+      if (codeEl) codeEl.textContent = 'Owner managed';
+      if (summary) summary.textContent = 'Only the group owner can create or revoke invitations.';
+      if (copyButton) copyButton.hidden = true;
+      return;
+    }
+    if (ownerControls) ownerControls.hidden = false;
+    if (copyButton) copyButton.hidden = false;
+    if (summary) summary.textContent = 'Loading invitations…';
+    try {
+      const data = await inviteRequest('list');
+      const invites = Array.isArray(data.invites) ? data.invites : [];
+      const now = Date.now();
+      const active = invites.filter(i => i.active && (!i.expiresAt || i.expiresAt > now) && i.uses < i.maxUses);
+      const primary = active[0];
+      if (codeEl) codeEl.textContent = primary?.code || 'No active invite';
+      if (copyButton) copyButton.disabled = !primary?.code;
+      if (summary) summary.textContent = primary ? `${primary.maxUses - primary.uses} use${primary.maxUses - primary.uses === 1 ? '' : 's'} remaining · expires ${formatInviteTime(primary.expiresAt)}` : 'Create a new invitation when you are ready to add a teammate.';
+      const list = document.getElementById('inviteList');
+      if (list) {
+        list.innerHTML = invites.length ? invites.map(i => {
+          const expired = i.expiresAt && i.expiresAt <= now;
+          const state = !i.active ? 'Revoked' : expired ? 'Expired' : i.uses >= i.maxUses ? 'Used up' : 'Active';
+          return `<div class="invite-list-row"><div><strong>${escapeHtml(i.code || 'Legacy invite')}</strong><span>${state} · ${i.uses}/${i.maxUses} uses</span><small>${formatInviteTime(i.expiresAt)}</small></div>${state === 'Active' ? `<button type="button" data-revoke-invite="${escapeHtml(i.id)}">Revoke</button>` : ''}</div>`;
+        }).join('') : '<p class="small">No invitations created yet.</p>';
+        list.querySelectorAll('[data-revoke-invite]').forEach(button => button.addEventListener('click', async () => {
+          if (!confirm('Revoke this invitation? It will stop working immediately.')) return;
+          button.disabled = true;
+          try { await inviteRequest('revoke', { inviteId: button.dataset.revokeInvite }); await loadInvites(); }
+          catch (error) { window.hcimToast?.('Could not revoke invitation', error.message || 'Please try again.', 'error'); button.disabled = false; }
+        }));
+      }
+    } catch (error) {
+      console.error('Could not load invites', error);
+      if (summary) summary.textContent = error.message || 'Could not load invitations.';
+      if (codeEl) codeEl.textContent = 'Unavailable';
+    }
+  }
+
   async function loadGroupPage(detail) {
     const { user, profile, groupId, group } = detail;
     document.getElementById('sidebarGroupName').textContent = group.name || 'HCIM Group';
     document.getElementById('dashboardGreeting').textContent = `Welcome back, ${profile.displayName || user.displayName || 'Ironman'}`;
     document.getElementById('dashboardGroupLine').textContent = `${group.name || 'Your group'} is ready for the next milestone.`;
-    document.getElementById('groupInviteCode').textContent = group.inviteCode || 'Unavailable';
+    document.getElementById('groupInviteCode').textContent = profile.role === 'owner' ? 'Loading…' : 'Owner managed';
     document.getElementById('groupPageName').textContent = group.name || 'HCIM Group';
     document.getElementById('groupCapacityText').textContent = `Members: ${group.memberCount || 1}/${group.groupSize || 3}`;
     document.getElementById('sidebarMemberCount').textContent = `${group.memberCount || 1}/${group.groupSize || 3} members`;
@@ -443,6 +503,8 @@
         ? `${window.location.origin}/.netlify/functions/dink-sync?group=${encodeURIComponent(groupId)}&player=${encodeURIComponent(slot)}&token=${encodeURIComponent(token)}`
         : 'Dink token unavailable — log out and back in once.';
     }
+
+    await loadInvites();
 
     try {
       const db = firebase.firestore();
@@ -473,6 +535,19 @@
       try { await navigator.clipboard.writeText(code); document.getElementById('copyInviteBtn').textContent = 'Copied!'; setTimeout(()=>document.getElementById('copyInviteBtn').textContent='Copy Invite Code',1500); }
       catch (_) { prompt('Copy this invite code:', code); }
     });
+    document.getElementById('createInviteBtn')?.addEventListener('click', async () => {
+      const button = document.getElementById('createInviteBtn');
+      button.disabled = true;
+      try {
+        const expiryHours = Number(document.getElementById('inviteExpiry')?.value || 72);
+        const maxUses = Number(document.getElementById('inviteMaxUses')?.value || 1);
+        await inviteRequest('create', { expiryHours, maxUses });
+        await loadInvites();
+      } catch (error) { window.hcimToast?.('Could not create invitation', error.message || 'Please try again.', 'error'); }
+      finally { button.disabled = false; }
+    });
+    document.getElementById('refreshInvitesBtn')?.addEventListener('click', loadInvites);
+
     document.getElementById('copyDinkBtn')?.addEventListener('click', async () => {
       const url = document.getElementById('dinkSyncUrl')?.textContent.trim() || '';
       if (!url.startsWith('http')) return;
@@ -483,6 +558,7 @@
     document.getElementById('settingsImportBtn')?.addEventListener('click', () => document.getElementById('importBtn')?.click());
     document.getElementById('settingsExportBtn')?.addEventListener('click', () => document.getElementById('exportBtn')?.click());
     window.addEventListener('hcim-group-ready', e => loadGroupPage(e.detail));
+    window.addEventListener('hcim-session-reset', () => { if (stopActivityFeed) { stopActivityFeed(); stopActivityFeed = null; } renderActivityFeed([]); });
 
     const observer = new MutationObserver(scheduleDashboardRefresh);
     ['progressText','mainTasks','questTracker','diaryTracker','storageTasks','player1','player2','player3','player4','player5'].forEach(id => {

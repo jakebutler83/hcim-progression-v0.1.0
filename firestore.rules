@@ -1,0 +1,123 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function groupExists(groupId) {
+      return exists(/databases/$(database)/documents/groups/$(groupId));
+    }
+
+    function groupData(groupId) {
+      return get(/databases/$(database)/documents/groups/$(groupId)).data;
+    }
+
+    function isMember(groupId) {
+      return signedIn()
+        && groupExists(groupId)
+        && request.auth.uid in groupData(groupId).memberUids;
+    }
+
+    function isOwner(groupId) {
+      return isMember(groupId)
+        && groupData(groupId).ownerUid == request.auth.uid;
+    }
+
+    function protectedUserFieldsUnchanged() {
+      return request.resource.data.groupId == resource.data.groupId
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.slot == resource.data.slot;
+    }
+
+    function protectedMemberFieldsUnchanged() {
+      return request.resource.data.uid == resource.data.uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.slot == resource.data.slot
+        && request.resource.data.joinedAt == resource.data.joinedAt;
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.groupId == null
+        && request.resource.data.role == null;
+
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && protectedUserFieldsUnchanged();
+
+      allow delete: if signedIn() && request.auth.uid == userId;
+    }
+
+    // Invitations are created, checked, consumed and revoked only by trusted
+    // Netlify Functions using the Firebase Admin SDK.
+    match /groupInvites/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /groups/{groupId} {
+      // Group creation, membership changes and ownership changes are server-only.
+      allow create, update: if false;
+      allow get: if isMember(groupId);
+      allow list: if false;
+      allow delete: if false;
+
+      match /members/{memberUid} {
+        allow read: if isMember(groupId);
+        allow create: if false;
+
+        // Members may edit only non-authority profile/preferences fields.
+        allow update: if isMember(groupId)
+          && request.auth.uid == memberUid
+          && protectedMemberFieldsUnchanged();
+
+        allow delete: if false;
+      }
+
+      match /progress/{progressId} {
+        function validProgressShape() {
+          return progressId == 'main'
+            && request.resource.data.keys().hasOnly(['done','playerDone','diaryDone','diarySteps','players','updatedAt'])
+            && request.resource.data.done is map
+            && request.resource.data.playerDone is map
+            && request.resource.data.diaryDone is map
+            && request.resource.data.diarySteps is map
+            && request.resource.data.players is map
+            && request.resource.data.players.keys().hasOnly(['groupName','player1','player2','player3','player4','player5'])
+            && request.resource.data.done.size() <= 2500
+            && request.resource.data.playerDone.size() <= 2500
+            && request.resource.data.diaryDone.size() <= 500
+            && request.resource.data.diarySteps.size() <= 500;
+        }
+        allow read: if isMember(groupId);
+        allow create, update: if isMember(groupId) && validProgressShape();
+        allow delete: if isOwner(groupId);
+      }
+
+      match /activity/{activityId} {
+        allow read: if isMember(groupId);
+        allow write: if false;
+      }
+
+      match /locations/{uid} {
+        allow read: if isMember(groupId);
+        allow write: if false;
+      }
+    }
+
+    match /_rateLimits/{document=**} { allow read, write: if false; }
+
+    match /companionLinkCodes/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /companionTokens/{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

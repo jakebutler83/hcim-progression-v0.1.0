@@ -3,6 +3,28 @@
   const configured = config.apiKey && !String(config.apiKey).includes('PASTE');
   let auth;
   let db;
+  let lastRuntimeUid = null;
+  const SESSION_UID_KEY = 'hcim-session-user-v1';
+
+  function clearClientSession(reason = 'auth-change') {
+    window.HCIM_CURRENT_USER = null;
+    window.HCIM_CURRENT_PROFILE = null;
+    window.HCIM_ACTIVE_GROUP_ID = null;
+    window.HCIM_ACTIVE_GROUP = null;
+    window.dispatchEvent(new CustomEvent('hcim-session-reset', { detail: { reason } }));
+  }
+
+  function rememberSessionUid(uid) {
+    try {
+      if (uid) sessionStorage.setItem(SESSION_UID_KEY, uid);
+      else sessionStorage.removeItem(SESSION_UID_KEY);
+    } catch (_) {}
+  }
+
+  function storedSessionUid() {
+    try { return sessionStorage.getItem(SESSION_UID_KEY) || ''; }
+    catch (_) { return ''; }
+  }
 
   function authMessage(text, type = '') {
     const el = document.getElementById('authMessage');
@@ -53,6 +75,31 @@
     document.getElementById('groupScreen').hidden = screen !== 'group';
     document.getElementById('appShell').hidden = screen !== 'app';
   }
+
+
+
+  async function authenticatedFunction(functionName, payload = {}) {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Please log in again.');
+    const idToken = await user.getIdToken();
+    const response = await fetch(`/.netlify/functions/${functionName}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(data.error || `Request failed (${response.status}).`);
+      error.code = data.code || '';
+      throw error;
+    }
+    return data;
+  }
+
+  window.HCIM_AUTHENTICATED_FUNCTION = authenticatedFunction;
 
   function makeInviteCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -139,14 +186,45 @@
 
   async function openGroup(groupId, profile, user) {
     profile = await ensureDinkToken(user, profile);
-    const groupSnap = await db.collection('groups').doc(groupId).get();
+    let groupSnap;
+    try {
+      groupSnap = await db.collection('groups').doc(groupId).get();
+    } catch (error) {
+      if (error?.code === 'permission-denied') {
+        await db.collection('users').doc(user.uid).set({
+          groupId: null,
+          role: null,
+          slot: null,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        clearClientSession('invalid-saved-group');
+        window.HCIM_CURRENT_USER = user;
+        window.HCIM_CURRENT_PROFILE = { ...profile, groupId: null, role: null, slot: null };
+        document.getElementById('groupWelcomeTitle').textContent = `Welcome, ${profile.displayName || user.displayName || 'Ironman'}!`;
+        groupMessage('Your saved group was not valid for this account, so it was cleared.', 'error');
+        showOnly('group');
+        return;
+      }
+      throw error;
+    }
     if (!groupSnap.exists) {
-      await db.collection('users').doc(user.uid).update({ groupId: null, role: null });
+      await db.collection('users').doc(user.uid).set({ groupId: null, role: null, slot: null }, { merge: true });
+      clearClientSession('missing-group');
+      window.HCIM_CURRENT_USER = user;
+      window.HCIM_CURRENT_PROFILE = { ...profile, groupId: null, role: null, slot: null };
       showOnly('group');
       return;
     }
     const group = groupSnap.data();
-    try { await ensureInviteDocument(groupId, group, user); } catch (error) { console.warn('Invite backfill failed:', error); }
+    if (!Array.isArray(group.memberUids) || !group.memberUids.includes(user.uid)) {
+      await db.collection('users').doc(user.uid).set({ groupId: null, role: null, slot: null }, { merge: true });
+      clearClientSession('group-membership-mismatch');
+      window.HCIM_CURRENT_USER = user;
+      window.HCIM_CURRENT_PROFILE = { ...profile, groupId: null, role: null, slot: null };
+      groupMessage('That saved group does not belong to this account, so it was cleared.', 'error');
+      showOnly('group');
+      return;
+    }
     window.HCIM_CURRENT_USER = user;
     window.HCIM_CURRENT_PROFILE = profile;
     window.HCIM_ACTIVE_GROUP_ID = groupId;
@@ -269,59 +347,14 @@
       const name = document.getElementById('createGroupName').value.trim();
       const groupSize = Number(document.getElementById('createGroupSize').value);
       if (!name) return groupMessage('Enter a group name.', 'error');
-      groupMessage('Creating your group…');
+      groupMessage('Creating your group securely…');
       const button = event.submitter;
       if (button) button.disabled = true;
       try {
+        const result = await authenticatedFunction('group-create', { name, groupSize });
         const profile = await loadProfile(user);
-        const groupRef = db.collection('groups').doc();
-        const inviteCode = makeInviteCode();
-        const batch = db.batch();
-        batch.set(groupRef, {
-          name,
-          ownerUid: user.uid,
-          memberUids: [user.uid],
-          memberCount: 1,
-          groupSize,
-          inviteCode,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        batch.set(db.collection('groupInvites').doc(inviteCode), {
-          groupId: groupRef.id,
-          groupName: name,
-          ownerUid: user.uid,
-          active: true,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        batch.set(groupRef.collection('members').doc(user.uid), {
-          uid: user.uid,
-          displayName: profile.displayName || user.displayName || '',
-          runescapeName: profile.runescapeName || '',
-          role: 'owner',
-          slot: 'player1',
-          joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        batch.update(db.collection('users').doc(user.uid), {
-          groupId: groupRef.id,
-          role: 'owner',
-          slot: 'player1',
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        batch.set(groupRef.collection('progress').doc('main'), {
-          done: {}, playerDone: {}, diaryDone: {}, diarySteps: {},
-          players: {
-            groupName: name,
-            player1: profile.runescapeName || profile.displayName || 'Player 1',
-            player2: '', player3: '', player4: '', player5: ''
-          },
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        await batch.commit();
-        const updatedProfile = { ...profile, groupId: groupRef.id, role: 'owner', slot: 'player1' };
-        await openGroup(groupRef.id, updatedProfile, user);
+        const updatedProfile = { ...profile, groupId: result.groupId, role: 'owner', slot: 'player1' };
+        await openGroup(result.groupId, updatedProfile, user);
       } catch (error) {
         console.error(error);
         groupMessage(friendlyError(error), 'error');
@@ -335,72 +368,58 @@
       event.target.value = normalizeInviteCode(event.target.value);
     });
 
+    let previewedInviteCode = '';
+    async function previewJoinInvite(code) {
+      const preview = document.getElementById('joinInvitePreview');
+      if (!preview) return false;
+      preview.hidden = false;
+      preview.className = 'join-invite-preview loading';
+      preview.textContent = 'Checking invitation…';
+      try {
+        const data = await authenticatedFunction('group-invite-preview', { code });
+        previewedInviteCode = code;
+        const expiry = data.expiresAt ? new Date(data.expiresAt).toLocaleString() : 'No expiry';
+        preview.className = 'join-invite-preview success';
+        preview.innerHTML = `<strong>${data.groupName}</strong><span>${data.memberCount}/${data.groupSize} members · ${data.remainingUses} use${data.remainingUses === 1 ? '' : 's'} left</span><small>Expires: ${expiry}</small>`;
+        return true;
+      } catch (error) {
+        previewedInviteCode = '';
+        preview.className = 'join-invite-preview error';
+        preview.textContent = friendlyError(error);
+        return false;
+      }
+    }
+
+    document.getElementById('previewInviteBtn')?.addEventListener('click', async () => {
+      const code = normalizeInviteCode(document.getElementById('joinInviteCode').value);
+      if (code.length < 6) return groupMessage('Enter a valid invite code.', 'error');
+      await previewJoinInvite(code);
+    });
+
+    document.getElementById('joinInviteCode')?.addEventListener('input', () => {
+      previewedInviteCode = '';
+      const preview = document.getElementById('joinInvitePreview');
+      if (preview) preview.hidden = true;
+    });
+
     document.getElementById('joinGroupForm')?.addEventListener('submit', async event => {
       event.preventDefault();
       const user = auth.currentUser;
       if (!user) return groupMessage('Please log in again.', 'error');
       const code = normalizeInviteCode(document.getElementById('joinInviteCode').value);
       if (code.length < 4) return groupMessage('Enter a valid invite code.', 'error');
-      groupMessage('Joining group…');
+      if (previewedInviteCode !== code) {
+        const valid = await previewJoinInvite(code);
+        if (!valid) return;
+      }
+      groupMessage('Joining the confirmed group…');
       const button = event.submitter;
       if (button) button.disabled = true;
       try {
+        const result = await authenticatedFunction('group-invite-accept', { code });
         const profile = await loadProfile(user);
-        if (profile.groupId) throw new Error('Your account already belongs to a group.');
-        const inviteRef = db.collection('groupInvites').doc(code);
-        let joinedGroupId = null;
-        let joinedGroup = null;
-        let joinedSlot = null;
-        await db.runTransaction(async transaction => {
-          const inviteSnap = await transaction.get(inviteRef);
-          if (!inviteSnap.exists || inviteSnap.data().active === false) throw new Error('That invite code is invalid or expired.');
-          const invite = inviteSnap.data();
-          const groupRef = db.collection('groups').doc(invite.groupId);
-          const groupSnap = await transaction.get(groupRef);
-          if (!groupSnap.exists) throw new Error('That group no longer exists.');
-          const group = groupSnap.data();
-          const members = Array.isArray(group.memberUids) ? group.memberUids : [];
-          if (members.includes(user.uid)) throw new Error('You are already a member of this group.');
-          const memberCount = Number(group.memberCount || members.length || 0);
-          const groupSize = Number(group.groupSize || 3);
-          if (memberCount >= groupSize) throw new Error('That group is already full.');
-          const slotNumber = memberCount + 1;
-          const slot = `player${slotNumber}`;
-          joinedSlot = slot;
-          const memberRef = groupRef.collection('members').doc(user.uid);
-          const userRef = db.collection('users').doc(user.uid);
-          const progressRef = groupRef.collection('progress').doc('main');
-          const playerName = profile.runescapeName || profile.displayName || user.displayName || `Player ${slotNumber}`;
-
-          transaction.update(groupRef, {
-            memberUids: firebase.firestore.FieldValue.arrayUnion(user.uid),
-            memberCount: memberCount + 1,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-          transaction.set(memberRef, {
-            uid: user.uid,
-            displayName: profile.displayName || user.displayName || '',
-            runescapeName: profile.runescapeName || '',
-            role: 'member',
-            slot,
-            joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-          transaction.update(userRef, {
-            groupId: groupRef.id,
-            role: 'member',
-            slot,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-          transaction.set(progressRef, {
-            players: { [slot]: playerName },
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true });
-          joinedGroupId = groupRef.id;
-          joinedGroup = { ...group, memberUids: [...members, user.uid], memberCount: memberCount + 1 };
-        });
-        const updatedProfile = { ...profile, groupId: joinedGroupId, role: 'member', slot: joinedSlot };
-        window.HCIM_ACTIVE_GROUP = joinedGroup;
-        await openGroup(joinedGroupId, updatedProfile, user);
+        const updatedProfile = { ...profile, groupId: result.groupId, role: 'member', slot: result.slot };
+        await openGroup(result.groupId, updatedProfile, user);
       } catch (error) {
         console.error(error);
         groupMessage(friendlyError(error), 'error');
@@ -415,14 +434,22 @@
     auth.onAuthStateChanged(async user => {
       document.body.classList.remove('auth-loading');
       updateVerificationBanner(user);
+
+      const nextUid = user?.uid || '';
+      const previousUid = lastRuntimeUid || storedSessionUid();
+      if (previousUid && previousUid !== nextUid) {
+        clearClientSession('account-switch');
+      } else if (!nextUid) {
+        clearClientSession('signed-out');
+      }
+      lastRuntimeUid = nextUid || null;
+      rememberSessionUid(nextUid);
+
       if (user) {
         await user.reload().catch(() => {});
         updateVerificationBanner(user);
         await routeSignedInUser(user);
       } else {
-        window.HCIM_CURRENT_USER = null;
-        window.HCIM_CURRENT_PROFILE = null;
-        window.HCIM_ACTIVE_GROUP_ID = null;
         showOnly('auth');
         showForm('login');
       }

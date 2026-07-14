@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HCIM Progression v0.4.0</title>
+  <title>HCIM Progression v4.4.5</title>
   <meta name="theme-color" content="#0d1117" />
+  <link id="leafletCss" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" crossorigin="anonymous" referrerpolicy="no-referrer" onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css'" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="auth-loading">
@@ -76,9 +77,9 @@
           <p>Enter the invite code your group owner sent you.</p>
           <form id="joinGroupForm" class="auth-form join-group-form">
             <label>Invite code
-              <input id="joinInviteCode" maxlength="8" autocomplete="off" placeholder="HC7A2K" required />
+              <input id="joinInviteCode" maxlength="16" autocomplete="off" placeholder="ABCD1234" required />
             </label>
-            <button class="primary auth-submit" type="submit">Join Group</button>
+            <div class="join-button-row"><button id="previewInviteBtn" type="button">Preview Invite</button><button class="primary auth-submit" type="submit">Join Group</button></div><div id="joinInvitePreview" class="join-invite-preview" hidden></div>
           </form>
         </div>
         <p id="groupMessage" class="auth-message" aria-live="polite"></p>
@@ -127,6 +128,7 @@
       <button class="side-link" data-target="storage">🎒 <span>Group Storage</span></button>
       <button class="side-link" data-target="calc">🧮 <span>Skill Planner</span></button>
       <button class="side-link" data-target="group">🛡️ <span>Group</span></button>
+      <button class="side-link" data-target="live-map">🗺️ <span>Live Map</span></button>
       <button class="side-link" data-target="settings">⚙️ <span>Settings</span></button>
     </nav>
     <div class="sidebar-footer"><span id="sidebarGroupName">Your group</span><small id="sidebarMemberCount">Loading members…</small></div>
@@ -236,6 +238,7 @@
       <button class="tab" data-route="calc">🧮 Skill Math</button>
       <button class="tab" data-route="sync">🟢 Live Sync</button>
       <button class="tab" data-route="group">👥 Group</button>
+      <button class="tab" data-route="live-map">🗺️ Live Map</button>
       <button class="tab" data-route="settings">⚙️ Settings</button>
     </nav>
 
@@ -331,7 +334,23 @@
       <div class="route-head"><div><span class="beta-pill">CLOSED BETA</span><h2>🔌 Connections</h2><p>Your group progress saves automatically. Extra integrations are optional.</p></div></div>
       <div class="connections-grid">
         <article class="card connection-card"><span class="connection-status live">CONNECTED</span><h3>Firebase Group Sync</h3><p id="syncDetails">Checking cloud sync…</p><small>Tasks, quests, diaries, names, and imports are stored in your private group.</small></article>
-        <article class="card connection-card"><span class="connection-status optional">OPTIONAL</span><h3>Discord Notifications</h3><p>Send checklist completions to the Discord channel configured by the beta owner.</p><div class="discord-test-row"><button id="discordTestBtn" type="button">Send Discord test</button><span id="discordTestStatus" class="small"></span></div></article>
+        <article class="card connection-card">
+          <span class="connection-status optional">OPTIONAL</span>
+          <h3>Discord Notifications</h3>
+          <p>Connect a Discord channel for this browser. Each tester or group member can use their own webhook.</p>
+          <label for="discordWebhookUrl">Discord webhook URL</label>
+          <input id="discordWebhookUrl" type="password" autocomplete="off" spellcheck="false" placeholder="https://discord.com/api/webhooks/..." />
+          <div class="discord-test-row">
+            <button id="saveDiscordWebhook" type="button">Save webhook</button>
+            <button id="clearDiscordWebhook" type="button">Clear</button>
+            <span id="discordWebhookStatus" class="small"></span>
+          </div>
+          <div class="discord-test-row">
+            <button id="discordTestBtn" type="button">Send Discord test</button>
+            <span id="discordTestStatus" class="small"></span>
+          </div>
+          <small>Saved only in this browser. Private mode, cleared site data, or another device requires entering it again.</small>
+        </article>
         <article class="card connection-card"><span class="connection-status optional">OPTIONAL</span><h3>RuneLite Auto-Sync with Dink</h3><p>Automatically record supported quests, diaries, and level milestones. Every teammate must use their own private URL from the Group page.</p><button class="open-route-btn" data-open-route="group" type="button">Open my Dink setup</button></article>
       </div>
       <div class="card beta-help-card"><h3>Need help or found a bug?</h3><p>Include what you clicked, what you expected, what happened, and your browser/device.</p><a class="button-link" href="https://github.com/jakebutler83/hcim-progression/issues/new" target="_blank" rel="noopener">Report Beta Feedback</a></div>
@@ -340,11 +359,60 @@
     <section id="group" class="route">
       <div class="route-head"><div><h2>👥 Group Management</h2><p>View your members and share the invite code.</p></div></div>
       <div class="group-management-grid">
-        <article class="card invite-card"><span class="eyebrow">INVITE CODE</span><h3 id="groupInviteCode">Loading…</h3><button id="copyInviteBtn" class="primary" type="button">Copy Invite Code</button><p class="small">Send this code to teammates after they create an account.</p></article>
+        <article id="inviteManagementCard" class="card invite-card"><span class="eyebrow">SECURE INVITATIONS</span><h3 id="groupInviteCode">Loading…</h3><div class="invite-primary-actions"><button id="copyInviteBtn" class="primary" type="button">Copy Active Invite</button><button id="refreshInvitesBtn" type="button">Refresh</button></div><p id="inviteSummaryText" class="small">Loading owner invitations…</p><div id="inviteOwnerControls" class="invite-owner-controls" hidden><div class="invite-create-row"><label>Expires<select id="inviteExpiry"><option value="24">24 hours</option><option value="72" selected>3 days</option><option value="168">7 days</option></select></label><label>Uses<select id="inviteMaxUses"><option value="1" selected>1 use</option><option value="2">2 uses</option><option value="3">3 uses</option><option value="4">4 uses</option></select></label><button id="createInviteBtn" class="primary" type="button">Create Invite</button></div><div id="inviteList" class="invite-list"></div></div></article>
         <article class="card invite-card"><span class="eyebrow">RUNELITE AUTO-SYNC — OPTIONAL</span><h3>Your private Dink URL</h3><p class="small">This URL belongs only to your account and player slot. Each teammate must copy their own URL.</p><code id="dinkSyncUrl" class="dink-url">Loading…</code><button id="copyDinkBtn" type="button">Copy My Dink URL</button><ol class="compact-steps"><li>Install Dink from RuneLite Plugin Hub.</li><li>Keep your Discord webhook as the primary webhook.</li><li>Paste this URL into Quest, Diary, and Level overrides.</li><li>Never post this URL publicly.</li></ol></article>
         <article class="card"><span class="eyebrow">GROUP DETAILS</span><h3 id="groupPageName">Loading…</h3><p id="groupOwnerText">Owner: loading…</p><p id="groupCapacityText">Members: loading…</p></article>
       </div>
       <div id="groupMemberCards" class="member-card-grid"></div>
+    </section>
+
+
+    <section id="live-map" class="route live-map-route">
+      <div class="route-head live-map-head">
+        <div>
+          <span class="eyebrow">REAL-TIME GROUP PRESENCE</span>
+          <h2>🗺️ Live OSRS Group Map</h2>
+          <p>A coordinate-accurate Old School RuneScape map with live RuneLite positions and city labels.</p>
+        </div>
+        <div class="live-map-actions">
+          <span id="liveMapOnlineCount" class="live-map-status-pill">0 online</span>
+          <button id="centerLiveMapBtn" type="button">Recenter player</button>
+          <button id="reloadTrueMapBtn" type="button">Reload map</button>
+          <button id="openDoogleMapBtn" type="button">Open full view</button>
+        </div>
+      </div>
+
+      <div class="live-map-layout true-osrs-map-layout">
+        <article class="card group-map-card true-osrs-map-card">
+          <div class="group-map-toolbar">
+            <div>
+              <strong>Old School RuneScape — Surface & map layers</strong>
+              <small id="liveMapUpdated">Waiting for first sync</small>
+            </div>
+            <div class="true-map-provider-actions"><span class="true-map-provider">Map by Weird Gloop • Assets by Jagex</span><button id="internalFullMapBtn" type="button">Open full view</button></div>
+          </div>
+
+          <div id="hcimWorldMap" class="hcim-world-map leaflet-osrs-map" aria-label="Interactive Old School RuneScape world map"></div>
+          <div class="hcim-map-help">Drag to pan • Scroll to zoom farther out • Surface tracking stays stable while using ladders or entering underground areas • Reset returns to the center of Gielinor</div>
+
+          <div class="true-osrs-map-focusbar">
+            <span>Focused player</span>
+            <strong id="trueOsrsMapFocus">Waiting for a linked teammate…</strong>
+          </div>
+
+          <p class="small group-map-note">
+            Clicking a teammate follows them automatically. You can still pan and zoom freely, and every marker remains locked to its actual world coordinate. The current official world map includes Varlamore as part of the physical map.
+          </p>
+        </article>
+
+        <aside class="card group-live-sidebar">
+          <span class="eyebrow">GROUP PRESENCE</span>
+          <h3>Teammates</h3>
+          <div id="groupLiveMemberList" class="group-live-member-list">
+            <div class="group-live-empty"><strong>Waiting for locations…</strong><p>Linked players will appear here automatically.</p></div>
+          </div>
+        </aside>
+      </div>
     </section>
 
     <section id="settings" class="route">
@@ -353,6 +421,7 @@
         <article class="card"><h3>Account</h3><p id="settingsAccountName">Signed in</p><p id="settingsAccountEmail" class="small"></p><button id="settingsLogoutBtn" type="button">Log out</button></article>
         <article class="card"><h3>Save Management</h3><p>Keep a backup before major updates.</p><div class="mini-actions"><button id="settingsImportBtn" type="button">Import Save</button><button id="settingsExportBtn" type="button">Export Save</button></div></article>
         <article class="card"><h3>Integrations</h3><p>Cloud group sync is automatic. Discord and RuneLite Dink are optional connections.</p><button class="open-route-btn" data-open-route="sync" type="button">Open Connections</button></article>
+        <article class="card sync-health-card"><h3>Cloud Save Status</h3><p id="syncStatus" class="sync-status local">Checking cloud sync…</p><p id="syncDetails" class="small">Connecting to your group data.</p><small>Build <span data-app-version>4.4.5</span></small></article>
         <article class="card theme-settings-card"><span class="eyebrow">APPEARANCE</span><h3>Interface Theme</h3><p>Choose the color format that best matches your RuneScape setup.</p><div class="theme-picker" role="group" aria-label="Interface theme"><button class="theme-option" type="button" data-theme-choice="classic"><span class="theme-swatch"><i style="background:#d7a43a"></i><i style="background:#7a5324"></i><i style="background:#241b12"></i></span><strong>Classic Gold</strong><small>Traditional OSRS bronze</small></button><button class="theme-option" type="button" data-theme-choice="ember"><span class="theme-swatch"><i style="background:#dc7d35"></i><i style="background:#7e351f"></i><i style="background:#26130f"></i></span><strong>Hardcore Ember</strong><small>Warm red and orange</small></button><button class="theme-option" type="button" data-theme-choice="runite"><span class="theme-swatch"><i style="background:#7db8db"></i><i style="background:#355a78"></i><i style="background:#14202a"></i></span><strong>Runite Blue</strong><small>Cool RuneLite-inspired</small></button><button class="theme-option" type="button" data-theme-choice="elite"><span class="theme-swatch"><i style="background:#a67be0"></i><i style="background:#573b79"></i><i style="background:#1d1727"></i></span><strong>Elite Purple</strong><small>Late-game diary style</small></button></div></article>
       <article class="card"><h3>Closed Beta Feedback</h3><p>Found a bug or have an idea? Send a report with a screenshot and your device/browser.</p><a class="button-link" href="https://github.com/jakebutler83/hcim-progression/issues/new" target="_blank" rel="noopener">Report Feedback</a></article>
       </div>
@@ -372,15 +441,29 @@
 
   <div id="appErrorBanner" class="app-error-banner" hidden><strong>Something went wrong.</strong><span id="appErrorText">Refresh the page or report this beta issue.</span><button id="dismissErrorBtn" type="button">Dismiss</button></div>
 
-  <footer>HCIM Progression v0.4.0 Closed Beta • Unofficial fan-made tool • Food + teleport + escape plan.</footer>
+  <footer>HCIM Progression v<span data-app-version>4.4.5</span> Closed Beta • Unofficial fan-made tool • Food + teleport + escape plan.</footer>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="app-version.js"></script>
   <script src="firebase-config.js"></script>
   <script src="auth.js"></script>
+  <script src="discord-browser-settings.js"></script>
   <script src="script.js"></script>
   <script src="app-ui.js"></script>
   <script src="beta-ui.js"></script>
+  <script src="companion-link.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    if (!window.L) {
+      const fallback=document.createElement('script');
+      fallback.src='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
+      fallback.onload=()=>window.dispatchEvent(new Event('hcim-leaflet-ready'));
+      fallback.onerror=()=>window.hcimToast?.('Map library unavailable','The live map could not load. Other tracker features still work.','error');
+      document.head.appendChild(fallback);
+    }
+  </script>
+  <script src="group-live-map.js"></script>
 </body>
 </html>

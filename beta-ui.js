@@ -28,12 +28,40 @@
   }
 
   window.addEventListener('hcim-group-ready', () => setTimeout(showWelcomeOnce, 300));
+  function isIgnorableRuntimeError(value) {
+    const message = String(value?.message || value || '');
+    return !message
+      || message.includes('ResizeObserver loop')
+      || message.includes('Script error.')
+      || message.includes('The play() request was interrupted')
+      || message.includes('AbortError')
+      || message.includes('Load failed')
+      || message.includes('Failed to fetch dynamically imported module');
+  }
+
   window.addEventListener('error', (event) => {
+    // Resource failures (images, fonts, map tiles, extensions, etc.) also fire
+    // the window "error" event, but they are not application crashes.
+    if (!(event instanceof ErrorEvent)) {
+      console.warn('Non-fatal resource load error:', event.target?.src || event.target?.href || event.target);
+      return;
+    }
+
+    const source = String(event.filename || '');
+    const fromBrowserExtension = source.startsWith('chrome-extension:')
+      || source.startsWith('moz-extension:')
+      || source.startsWith('safari-extension:');
+    if (fromBrowserExtension || isIgnorableRuntimeError(event.error || event.message)) return;
+
     console.error('Unhandled app error:', event.error || event.message);
     showError('A beta error occurred. Your saved Firebase data should be safe. Refresh and report the steps that caused it.');
-  });
+  }, true);
+
   window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection:', event.reason);
+    const reason = event.reason;
+    if (isIgnorableRuntimeError(reason)) return;
+
+    console.error('Unhandled promise rejection:', reason);
     showError('A connection or app action failed. Refresh once; if it repeats, send a beta report.');
   });
 
@@ -79,4 +107,20 @@
       button.addEventListener('click', () => applyTheme(button.dataset.themeChoice, true));
     });
   });
+})();
+
+
+// v4.4.5 build/version and graceful external-image fallback
+(() => {
+  function hydrateVersion(){document.querySelectorAll('[data-app-version]').forEach(el=>el.textContent=window.HCIM_BUILD_VERSION||'4.4.5');}
+  function imageFallback(event){
+    const img=event.target;
+    if(!(img instanceof HTMLImageElement)||img.dataset.hcimFallbackApplied||img.classList.contains('leaflet-tile')||img.closest('.leaflet-container')) return;
+    img.dataset.hcimFallbackApplied='1';
+    img.classList.add('image-load-failed');
+    img.removeAttribute('srcset');
+    img.src='icons/icon-192.png';
+  }
+  document.addEventListener('DOMContentLoaded', hydrateVersion);
+  window.addEventListener('error', imageFallback, true);
 })();

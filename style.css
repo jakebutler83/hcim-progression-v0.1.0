@@ -1275,3 +1275,359 @@ button.danger{background:linear-gradient(180deg,color-mix(in srgb,var(--hcim-dan
     linear-gradient(90deg,rgba(5,5,5,.78) 0%,rgba(5,5,5,.42) 48%,rgba(5,5,5,.12) 75%,rgba(5,5,5,.38) 100%),
     linear-gradient(0deg,rgba(8,6,4,.74),transparent 60%) !important;
 }
+
+
+/* v4.2 RuneLite companion linking */
+.companion-link-card{--panel-accent-1:#58a6ff;--panel-accent-2:#a67be0;--panel-accent-3:#d7a43a}
+.companion-code-box{display:grid;place-items:center;gap:4px;margin:14px 0;padding:16px;border:1px dashed color-mix(in srgb,var(--hcim-info,#58a6ff) 62%,transparent);border-radius:12px;background:rgba(0,0,0,.24)}
+.companion-code-box strong{font-family:var(--hcim-font-stat,monospace);font-size:clamp(1.5rem,4vw,2.15rem);letter-spacing:.15em;color:#dbeeff;user-select:all}
+.companion-code-box small{min-height:1.2em;color:var(--hcim-text-muted,#b8aa90)}
+.companion-link-message.success{color:var(--hcim-success,#68d391)}
+.companion-link-message.error{color:var(--hcim-danger,#e56b63)}
+
+
+/* =========================================================
+   v4.3 — LIVE GROUP MAP
+   ========================================================= */
+.live-map-head{align-items:center}
+.live-map-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.live-map-status-pill{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid rgba(104,211,145,.5);border-radius:999px;background:rgba(42,112,72,.18);color:#8ee3ad;font-weight:800}
+.live-map-status-pill:before{content:"";width:8px;height:8px;border-radius:50%;background:#68d391;box-shadow:0 0 10px #68d391}
+.live-map-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.7fr);gap:18px;align-items:start}
+.group-map-card{padding:0!important;overflow:hidden}
+.group-map-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(214,164,58,.28)}
+.group-map-toolbar div:first-child{display:grid;gap:2px}
+.group-map-toolbar small{color:var(--hcim-text-muted,#a99b82)}
+.group-map-legend{display:flex;gap:12px;font-size:.8rem}
+.group-map-legend span{display:inline-flex;align-items:center;gap:5px}
+.group-map-legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.group-map-legend i.online{background:#68d391;box-shadow:0 0 8px #68d391}
+.group-map-legend i.offline{background:#766f67}
+.group-live-map{position:relative;min-height:560px;overflow:hidden;background:
+  radial-gradient(circle at 22% 30%,rgba(88,166,255,.12),transparent 26%),
+  radial-gradient(circle at 72% 64%,rgba(240,164,54,.13),transparent 28%),
+  linear-gradient(145deg,#071117,#0b1d23 48%,#0a1518);
+  isolation:isolate}
+.group-map-grid{position:absolute;inset:0;background-image:
+  linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:32px 32px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.85),rgba(0,0,0,.25))}
+.group-map-landmass{position:absolute;background:
+  radial-gradient(circle at 35% 35%,rgba(150,178,88,.88),rgba(50,93,47,.94) 52%,rgba(27,58,39,.98));
+  border:1px solid rgba(190,204,116,.25);box-shadow:inset 0 0 45px rgba(0,0,0,.45),0 12px 40px rgba(0,0,0,.35);filter:saturate(.85)}
+.landmass-main{left:34%;top:14%;width:48%;height:66%;clip-path:polygon(30% 0,55% 4%,72% 18%,94% 24%,100% 49%,84% 67%,72% 84%,48% 100%,24% 92%,4% 70%,0 42%,12% 18%)}
+.landmass-kourend{left:5%;top:22%;width:25%;height:42%;clip-path:polygon(20% 0,80% 8%,100% 40%,82% 100%,14% 88%,0 38%)}
+.landmass-karamja{left:42%;top:72%;width:18%;height:20%;clip-path:polygon(20% 0,88% 12%,100% 62%,58% 100%,0 65%)}
+.landmass-desert{left:66%;top:65%;width:24%;height:27%;background:radial-gradient(circle at 40% 40%,#c79543,#765123 55%,#3f2e20);clip-path:polygon(13% 0,78% 6%,100% 42%,80% 100%,8% 82%,0 25%)}
+.group-map-watermark{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-8deg);font-family:var(--hcim-font-display,serif);font-size:clamp(3rem,9vw,8rem);letter-spacing:.22em;color:rgba(220,196,139,.035);pointer-events:none}
+.group-map-region-label{position:absolute;z-index:4;transform:translate(-50%,-50%);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(229,214,177,.43);text-shadow:0 1px 3px #000;pointer-events:none;white-space:nowrap}
+.group-player-marker{--marker-color:#68d391;position:absolute;z-index:10;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;cursor:pointer;color:white}
+.marker-dot{position:relative;display:grid;place-items:center;width:31px;height:31px;border-radius:50%;background:var(--marker-color);border:3px solid rgba(255,255,255,.9);box-shadow:0 4px 12px rgba(0,0,0,.6),0 0 18px color-mix(in srgb,var(--marker-color) 72%,transparent);font-weight:900}
+.marker-pulse{position:absolute;left:50%;top:50%;width:42px;height:42px;transform:translate(-50%,-50%);border-radius:50%;border:2px solid var(--marker-color);opacity:.7;animation:hcim-map-pulse 1.8s infinite}
+.marker-label{position:absolute;left:50%;top:36px;transform:translateX(-50%);padding:3px 7px;border-radius:7px;background:rgba(8,8,8,.88);border:1px solid color-mix(in srgb,var(--marker-color) 55%,transparent);white-space:nowrap;font-size:.72rem;font-weight:800}
+.group-player-marker.stale{filter:grayscale(.85);opacity:.58}
+.group-player-marker.stale .marker-pulse{display:none}
+.group-player-marker.highlight .marker-dot{animation:hcim-marker-highlight .6s alternate 2}
+@keyframes hcim-map-pulse{0%{transform:translate(-50%,-50%) scale(.6);opacity:.8}100%{transform:translate(-50%,-50%) scale(1.55);opacity:0}}
+@keyframes hcim-marker-highlight{to{transform:scale(1.35)}}
+.group-map-note{padding:10px 16px 14px;margin:0;color:var(--hcim-text-muted,#a99b82)}
+.group-live-sidebar{position:sticky;top:94px}
+.group-live-sidebar h3{margin-top:4px}
+.group-live-member-list{display:grid;gap:10px;margin-top:12px}
+.group-live-member-card{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:11px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(0,0,0,.18);transition:.18s ease}
+.group-live-member-card:hover,.group-live-member-card.selected{transform:translateY(-1px);border-color:rgba(88,166,255,.5);background:rgba(40,77,98,.18)}
+.live-member-avatar{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--marker-color);color:#09100d;font-weight:900;box-shadow:0 0 12px color-mix(in srgb,var(--marker-color) 45%,transparent)}
+.live-member-main{display:grid;gap:2px;min-width:0}
+.live-member-main strong{overflow:hidden;text-overflow:ellipsis}
+.live-member-main span,.live-member-main small{color:var(--hcim-text-muted,#a99b82);font-size:.78rem}
+.group-live-member-card time{font-size:.72rem;color:#d8c597;white-space:nowrap}
+.group-live-member-card.offline{opacity:.62}
+.group-live-empty{padding:24px 12px;text-align:center;border:1px dashed rgba(255,255,255,.13);border-radius:10px;color:var(--hcim-text-muted,#a99b82)}
+.group-live-empty p{margin-bottom:0}
+.group-live-empty.error{border-color:rgba(229,107,99,.5);color:#e99a94}
+
+@media(max-width:1100px){
+  .live-map-layout{grid-template-columns:1fr}
+  .group-live-sidebar{position:static}
+}
+@media(max-width:700px){
+  .group-live-map{min-height:430px}
+  .group-map-region-label{font-size:.56rem}
+  .marker-label{display:none}
+  .group-live-member-card{grid-template-columns:auto 1fr}
+  .group-live-member-card time{grid-column:2}
+}
+@media(prefers-reduced-motion:reduce){
+  .marker-pulse,.group-player-marker.highlight .marker-dot{animation:none}
+}
+
+
+/* =========================================================
+   v4.3.1 — TRUE OSRS WIKI MAP
+   ========================================================= */
+.true-osrs-map-card{background:#090b0c!important}
+.true-osrs-map-shell{
+  position:relative;
+  width:100%;
+  height:min(68vh,720px);
+  min-height:520px;
+  background:#060809;
+  overflow:hidden;
+  border-top:1px solid rgba(214,164,58,.18);
+  border-bottom:1px solid rgba(214,164,58,.22);
+}
+.true-osrs-map-frame{
+  display:block;
+  width:100%;
+  height:100%;
+  border:0;
+  background:#090b0c;
+}
+.true-map-provider{
+  color:var(--hcim-text-muted,#a99b82);
+  font-size:.74rem;
+  text-align:right;
+}
+.true-osrs-map-focusbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:11px 16px;
+  background:linear-gradient(90deg,rgba(88,166,255,.09),rgba(214,164,58,.08));
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.true-osrs-map-focusbar span{
+  color:var(--hcim-text-muted,#a99b82);
+  font-size:.78rem;
+  text-transform:uppercase;
+  letter-spacing:.09em;
+}
+.true-osrs-map-focusbar strong{
+  color:#f0d792;
+  text-align:right;
+}
+.live-member-focus{
+  appearance:none;
+  border:0;
+  padding:0;
+  margin:0;
+  width:100%;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  align-items:center;
+  gap:10px;
+  color:inherit;
+  background:transparent;
+  text-align:left;
+  cursor:pointer;
+}
+.live-member-card-foot{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  grid-column:1/-1;
+  padding-top:8px;
+  border-top:1px solid rgba(255,255,255,.06);
+}
+.live-member-card-foot a{
+  font-size:.72rem;
+  color:#76b9ef;
+  text-decoration:none;
+}
+.live-member-card-foot a:hover{text-decoration:underline}
+.group-live-member-card{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+}
+.group-live-member-card time{
+  grid-column:auto!important;
+}
+@media(max-width:700px){
+  .true-osrs-map-shell{height:58vh;min-height:410px}
+  .true-osrs-map-focusbar{align-items:flex-start;flex-direction:column}
+  .true-osrs-map-focusbar strong{text-align:left}
+  .true-map-provider{display:none}
+}
+
+
+/* =========================================================
+   v4.3.3 — CENTERED PLAYER MARKER + VARLAMORE CONTROLS
+   The embedded map is centered on the selected RuneLite coordinate,
+   so this overlay marks the exact focused player at map center.
+   ========================================================= */
+.true-osrs-player-marker{
+  position:absolute;
+  z-index:9;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-100%);
+  pointer-events:none;
+  display:grid;
+  justify-items:center;
+  filter:drop-shadow(0 8px 12px rgba(0,0,0,.68));
+}
+.true-marker-pin{
+  position:relative;
+  z-index:2;
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  border-radius:50% 50% 50% 10%;
+  transform:rotate(-45deg);
+  border:3px solid #fff2c6;
+  background:linear-gradient(145deg,#c93636,#7c1515);
+  color:#fff2c6;
+  font-size:1.15rem;
+  box-shadow:0 0 22px rgba(232,67,67,.72);
+}
+.true-marker-pin::first-letter{transform:rotate(45deg)}
+.true-marker-pin{line-height:1}
+.true-marker-pin::after{
+  content:"";
+  position:absolute;
+  inset:0;
+}
+.true-marker-card{
+  position:absolute;
+  bottom:51px;
+  left:50%;
+  transform:translateX(-50%);
+  min-width:150px;
+  padding:7px 10px;
+  border:1px solid rgba(240,183,66,.62);
+  border-radius:9px;
+  background:rgba(8,8,8,.92);
+  text-align:center;
+  white-space:nowrap;
+}
+.true-marker-card strong,
+.true-marker-card small{display:block}
+.true-marker-card strong{color:#ffe3a0}
+.true-marker-card small{margin-top:2px;color:#d0c2a4;font-size:.7rem}
+.true-marker-pulse{
+  position:absolute;
+  z-index:1;
+  left:50%;
+  bottom:-5px;
+  width:58px;
+  height:24px;
+  transform:translateX(-50%);
+  border:2px solid #e84343;
+  border-radius:50%;
+  animation:true-map-marker-pulse 1.7s infinite;
+}
+.true-osrs-player-marker.map-focus-only .true-marker-pin{
+  background:linear-gradient(145deg,#d6a53a,#7d5820);
+  box-shadow:0 0 22px rgba(214,165,58,.68);
+}
+.true-osrs-player-marker.map-focus-only .true-marker-pulse{
+  border-color:#d6a53a;
+}
+@keyframes true-map-marker-pulse{
+  0%{transform:translateX(-50%) scale(.55);opacity:.85}
+  100%{transform:translateX(-50%) scale(1.5);opacity:0}
+}
+@media(max-width:700px){
+  .true-marker-card{min-width:128px}
+}
+@media(prefers-reduced-motion:reduce){
+  .true-marker-pulse{animation:none}
+}
+
+/* =========================================================
+   v4.3.5 — TRUE COORDINATE-ANCHORED WORLD MAP
+   ========================================================= */
+.hcim-world-map{position:relative;height:min(72vh,760px);min-height:520px;overflow:hidden;background:#17222b;touch-action:none;cursor:grab;user-select:none}
+.hcim-world-map.dragging{cursor:grabbing}
+.hcim-world-map-stage{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.hcim-world-map-stage.animate-map{transition:transform .32s ease}
+.hcim-world-map-image{display:block;width:auto;height:auto;max-width:none;pointer-events:none}
+.hcim-map-markers{position:absolute;inset:0;pointer-events:none}
+.anchored-player-marker{position:absolute;z-index:4;transform:translate(-50%,-100%);border:0;background:transparent;padding:0;pointer-events:auto;cursor:pointer;filter:drop-shadow(0 5px 7px rgba(0,0,0,.75))}
+.anchored-marker-dot{display:grid;place-items:center;width:30px;height:30px;border-radius:50% 50% 50% 10%;transform:rotate(-45deg);border:3px solid #fff5d6;background:var(--marker-color);color:#0a0d0e;font-weight:950;font-size:.76rem}
+.anchored-marker-dot::first-letter{transform:rotate(45deg)}
+.anchored-marker-label{position:absolute;left:50%;bottom:38px;transform:translateX(-50%);padding:3px 7px;border-radius:7px;background:rgba(5,8,10,.92);border:1px solid color-mix(in srgb,var(--marker-color) 65%,#fff 10%);color:#fff3cf;font-size:.72rem;font-weight:900;white-space:nowrap}
+.anchored-marker-pulse{position:absolute;left:50%;bottom:-2px;width:42px;height:18px;transform:translateX(-50%);border:2px solid var(--marker-color);border-radius:50%;animation:anchored-map-pulse 1.7s infinite}
+.anchored-player-marker.selected{z-index:7}
+.anchored-player-marker.selected .anchored-marker-dot{box-shadow:0 0 18px var(--marker-color);transform:rotate(-45deg) scale(1.14)}
+.anchored-player-marker.stale{opacity:.55;filter:grayscale(.65)}
+.anchored-player-marker.stale .anchored-marker-pulse{display:none}
+.hcim-map-help{position:absolute;left:12px;bottom:12px;z-index:10;padding:6px 9px;border-radius:8px;background:rgba(4,7,9,.78);border:1px solid rgba(255,255,255,.16);color:#e8dcc0;font-size:.74rem;pointer-events:none}
+@keyframes anchored-map-pulse{0%{transform:translateX(-50%) scale(.55);opacity:.9}100%{transform:translateX(-50%) scale(1.5);opacity:0}}
+@media(max-width:700px){.hcim-world-map{height:58vh;min-height:410px}.anchored-marker-label{display:none}.hcim-map-help{font-size:.66rem}}
+@media(prefers-reduced-motion:reduce){.anchored-marker-pulse{animation:none}.hcim-world-map-stage.animate-map{transition:none}}
+
+
+/* v4.3.6 — fullscreen current map + wider zoom range */
+.true-osrs-map-card:fullscreen{width:100vw;height:100vh;max-width:none;margin:0;border-radius:0;display:flex;flex-direction:column;background:#10171d;padding:14px}
+.true-osrs-map-card:fullscreen .hcim-world-map{height:auto;min-height:0;flex:1}
+.true-osrs-map-card:fullscreen .group-map-note{display:none}
+.true-osrs-map-card:fullscreen .group-map-toolbar{flex:0 0 auto}
+.true-osrs-map-card:fullscreen .true-osrs-map-focusbar{flex:0 0 auto}
+.true-osrs-map-card.map-fullscreen-fallback{position:fixed;inset:0;z-index:99999;width:100vw;height:100vh;max-width:none;margin:0;border-radius:0;display:flex;flex-direction:column;background:#10171d;padding:14px}
+.true-osrs-map-card.map-fullscreen-fallback .hcim-world-map{height:auto;min-height:0;flex:1}
+.true-osrs-map-card.map-fullscreen-fallback .group-map-note{display:none}
+body.map-fullscreen-open{overflow:hidden}
+.live-member-full-map{border:0;background:transparent;color:#9ecbff;padding:0;font:inherit;font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.live-member-full-map:hover{color:#d7eaff}
+
+.true-map-provider-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.true-osrs-map-card:fullscreen #internalFullMapBtn,.true-osrs-map-card.map-fullscreen-fallback #internalFullMapBtn{position:relative;z-index:3}
+
+
+/* v4.3.10 — smaller selectable RuneScape item map markers */
+.anchored-player-marker{transform:translate(-50%,-92%)}
+.anchored-marker-icon-wrap{display:grid;place-items:center;width:24px;height:24px;border-radius:7px;background:rgba(18,13,7,.9);border:2px solid #f6dda0;box-shadow:0 2px 7px rgba(0,0,0,.7)}
+.anchored-marker-icon{display:block;width:20px;height:20px;object-fit:contain;image-rendering:auto;pointer-events:none}
+.anchored-marker-label{bottom:30px;font-size:.67rem;padding:2px 6px}
+.anchored-marker-pulse{bottom:-3px;width:31px;height:13px;border-width:1px}
+.anchored-player-marker.selected .anchored-marker-icon-wrap{transform:scale(1.1);box-shadow:0 0 13px var(--marker-color),0 2px 7px rgba(0,0,0,.75)}
+.live-member-item-avatar{background:rgba(15,12,8,.85);border:1px solid color-mix(in srgb,var(--marker-color) 70%,#fff 10%)}
+.live-member-item-avatar img{width:28px;height:28px;object-fit:contain}
+.marker-icon-picker{display:flex;align-items:center;gap:6px;color:#bcae8d;font-size:.72rem;font-weight:800}
+.marker-icon-picker select{max-width:150px;padding:5px 7px;border:1px solid #65491f;border-radius:7px;background:#151008;color:#f1d99b;font:inherit}
+@media(max-width:700px){.marker-icon-picker{width:100%;justify-content:space-between}.marker-icon-picker select{max-width:190px}}
+
+/* v4.3.11 coordinate-accurate Leaflet live map */
+.leaflet-osrs-map{touch-action:pan-x pan-y;background:#101820;cursor:grab}
+.leaflet-osrs-map:active{cursor:grabbing}
+.leaflet-osrs-map .leaflet-container{background:#101820}
+.leaflet-osrs-map .leaflet-tile{image-rendering:auto}
+.hcim-leaflet-div-icon{background:transparent!important;border:0!important}
+.leaflet-player-marker{position:relative;width:34px;height:34px;display:grid;place-items:center;filter:drop-shadow(0 2px 3px #000);transition:opacity .2s,transform .2s}
+.leaflet-player-marker.stale{opacity:.48;filter:grayscale(.7) drop-shadow(0 2px 3px #000)}
+.leaflet-player-marker.selected{transform:scale(1.12)}
+.leaflet-player-marker .anchored-marker-icon-wrap{width:25px;height:25px}
+.leaflet-player-marker .anchored-marker-icon{max-width:21px;max-height:21px}
+.leaflet-player-marker .anchored-marker-label{top:30px;left:50%;transform:translateX(-50%);white-space:nowrap}
+.leaflet-control-zoom a{background:#1b2630!important;color:#f1d18a!important;border-color:#4a3926!important}
+.leaflet-control-zoom a:hover{background:#283744!important}
+.true-osrs-map-card:fullscreen .leaflet-osrs-map,.true-osrs-map-card.map-fullscreen-fallback .leaflet-osrs-map{height:auto!important;min-height:0!important;flex:1}
+
+
+/* v4.3.12 map tab initialization and coordinate-anchored city labels */
+.osrs-city-label-icon{background:transparent!important;border:0!important;overflow:visible!important;pointer-events:none!important}
+.osrs-city-label{position:absolute;left:0;top:0;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none;user-select:none;font-family:Georgia,'Times New Roman',serif;font-weight:800;letter-spacing:.025em;color:#f0d89c;text-shadow:-1px -1px 0 #1b1207,1px -1px 0 #1b1207,-1px 1px 0 #1b1207,1px 1px 0 #1b1207,0 2px 3px #000;filter:drop-shadow(0 1px 1px #000)}
+.osrs-city-label-major{font-size:13px;color:#ffd979;text-transform:uppercase;letter-spacing:.07em}
+.osrs-city-label-town{display:none;font-size:11px;color:#ead6a7}
+.leaflet-osrs-map.show-town-labels .osrs-city-label-town{display:block}
+.true-osrs-map-card:fullscreen .osrs-city-label-major,.true-osrs-map-card.map-fullscreen-fallback .osrs-city-label-major{font-size:14px}
+.true-osrs-map-card:fullscreen .osrs-city-label-town,.true-osrs-map-card.map-fullscreen-fallback .osrs-city-label-town{font-size:12px}
+@media(max-width:700px){.osrs-city-label-major{font-size:11px}.osrs-city-label-town{font-size:9px}}
+
+/* v4.3.13 regional map layers */
+.true-osrs-map-card .leaflet-osrs-map{overflow:hidden}
+
+/* v4.3.15: tile-container clipping removed; Leaflet transforms tiles outside normal flow. */
+
+/* v4.3.17 — remove the small pulse/status bar beneath live player markers */
+.leaflet-player-marker .anchored-marker-pulse{display:none!important}
+.join-button-row,.invite-primary-actions,.invite-create-row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.join-button-row>*{flex:1}.join-invite-preview{margin-top:10px;padding:12px;border-radius:10px;border:1px solid #5e4826;background:#17120b;display:grid;gap:3px}.join-invite-preview strong{color:#ffe196}.join-invite-preview span,.join-invite-preview small{color:#c8b88e}.join-invite-preview.error{border-color:#8f3d36;color:#ffb5ad}.join-invite-preview.loading{color:#d9bd78}.invite-owner-controls{margin-top:14px}.invite-create-row label{display:grid;gap:5px;min-width:110px;color:#c8b88e;font-size:.78rem;font-weight:800}.invite-create-row select{min-height:40px}.invite-list{display:grid;gap:8px;margin-top:14px}.invite-list-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px;border:1px solid #513d21;border-radius:9px;background:#17120b}.invite-list-row>div{display:grid;gap:2px;min-width:0}.invite-list-row strong{color:#ffe196;letter-spacing:.08em}.invite-list-row span,.invite-list-row small{color:#aa976c;font-size:.78rem}.invite-list-row button{flex:none}@media(max-width:600px){.invite-create-row>*{width:100%}.invite-list-row{align-items:flex-start}}
+
+
+/* v4.4.5 reliability helpers */
+.image-load-failed{object-fit:contain!important;background:rgba(20,16,12,.9);padding:3px;opacity:.8}
+.sync-health-card .sync-status{display:inline-flex;align-items:center;gap:.4rem;font-weight:800;margin:.35rem 0}
+.sync-health-card .sync-status.live{color:#72d98b}.sync-health-card .sync-status.local{color:#e4b657}
